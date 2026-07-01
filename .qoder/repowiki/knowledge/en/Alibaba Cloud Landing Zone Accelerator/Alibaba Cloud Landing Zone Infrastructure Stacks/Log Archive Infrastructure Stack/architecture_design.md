@@ -1,0 +1,4 @@
+- Entry point is `main.tf`, currently a stub noting future integration with `modules/lza/components/log-archive`.
+- Provider configuration in `providers.tf` assumes a spoke role (`var.spoke_role_arn`) for cross-account access.
+- State management uses Alibaba Cloud OSS backend with Tablestore locking, defined in `versions.tf`.
+- Variables `region` and `spoke_role_arn` are injected externally, with no local resource definitions yet.

@@ -1,0 +1,3 @@
+- All GitHub Actions workflows enforce path-based triggers to isolate execution to specific bootstrap or stack directories.
+- Terraform execution is standardized via a single reusable workflow (`terraform-reusable.yml`) called by all module-specific pipelines.
+- Spoke account targeting is implemented via a JSON map variable (`SPOKE_ACCOUNT_IDS_JSON`) and matrix strategies in stack deployment workflows.

@@ -1,0 +1,4 @@
+- Entry point: `main.tf` orchestrates a three-stage provisioning flow: enable Resource Directory, create top-level folders (Core, Workloads, Sandbox), and instantiate five core member accounts (devops, log-archive, security, network, shared-services) within the Core folder.
+- Interface boundaries: `variables.tf` exposes only the management region; `outputs.tf` exports root folder ID, folder IDs, and account IDs for downstream modules.
+- Dependency direction: `versions.tf` pins Terraform >= 1.5 and alicloud provider >= 1.262.1; `providers.tf` configures the alicloud provider with environment-sourced credentials.
+- Architectural evidence: `main.tf` lines 1-48 define the resource graph; `versions.tf` line 9 notes local backend usage pending OSS migration in phase 2.

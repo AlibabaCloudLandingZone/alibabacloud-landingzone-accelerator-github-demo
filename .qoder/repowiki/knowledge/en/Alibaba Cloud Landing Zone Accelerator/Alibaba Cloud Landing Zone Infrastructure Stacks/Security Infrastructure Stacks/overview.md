@@ -1,0 +1,1 @@
+Placeholder Terraform stacks for Cloud Firewall, KMS, and WAF, designed to integrate with the Landing Zone Accelerator modules.

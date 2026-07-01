@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: infrastructure_stacks/security
+title: Security Infrastructure Stacks
+scope:
+    - stacks/30-security-firewall/
+    - stacks/30-security-kms/
+    - stacks/30-security-waf/
+source_files: []
+depends_on: []
+related_to:
+    - path: bootstrap/spoke_bootstrap

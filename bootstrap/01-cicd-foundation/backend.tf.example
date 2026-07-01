@@ -1,0 +1,22 @@
+# After running `terraform apply` with a local backend, add this block to
+# versions.tf and run `terraform init -migrate-state` to move state to OSS.
+#
+# Before migrating, obtain STS credentials for the CICD account:
+#   eval $(aliyun sts AssumeRole \
+#     --RoleArn acs:ram::<CICD_ACCOUNT_ID>:role/ResourceDirectoryAccountAccessRole \
+#     --RoleSessionName migrate \
+#     --DurationSeconds 3600 \
+#     | jq -r '.Credentials | "export ALICLOUD_ACCESS_KEY=\(.AccessKeyId)\nexport ALICLOUD_SECRET_KEY=\(.AccessKeySecret)\nexport ALICLOUD_SECURITY_TOKEN=\(.SecurityToken)"')
+#
+#   terraform init -migrate-state
+
+terraform {
+  backend "oss" {
+    bucket              = "tfstate-<CICD_ACCOUNT_ID>-cn-hangzhou"
+    prefix              = "bootstrap/01-cicd-foundation"
+    key                 = "terraform.tfstate"
+    region              = "cn-hangzhou"
+    tablestore_endpoint = "https://tfstate-lock.cn-hangzhou.ots.aliyuncs.com"
+    tablestore_table    = "tflock"
+  }
+}

@@ -1,0 +1,18 @@
+schema_version: 1
+module_path: dependency_management
+title: Terraform Provider Dependency Management with Lockfile Pinning
+scope: []
+source_files:
+    - bootstrap/00-org-structure/versions.tf
+    - bootstrap/00-org-structure/.terraform.lock.hcl
+    - bootstrap/01-cicd-foundation/versions.tf
+    - bootstrap/02-spoke-bootstrap/versions.tf
+    - bootstrap/02-spoke-bootstrap/modules/spoke-roles/versions.tf
+    - stacks/11-log-archive/versions.tf
+    - stacks/11-log-archive/.terraform.lock.hcl
+    - stacks/20-network-cen/versions.tf
+    - .github/workflows/terraform-reusable.yml
+    - .github/workflows/stacks.yml
+    - .gitignore
+depends_on: []
+related_to: []

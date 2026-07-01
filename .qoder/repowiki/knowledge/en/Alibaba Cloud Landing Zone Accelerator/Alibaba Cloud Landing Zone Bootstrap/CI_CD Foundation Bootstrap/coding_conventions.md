@@ -1,0 +1,3 @@
+- All resources explicitly specify `provider = alicloud.cicd` to enforce deployment into the CICD member account rather than the management account.
+- RAM role trust policies use JSON-encoded `Condition` blocks with `oidc:sub` constraints to scope GitHub Actions access by event type (pull_request vs environment:production).
+- State infrastructure resources (OSS bucket, OTS instance/table) are named with deterministic prefixes (`tfstate-`, `tfstate-lock`) derived from account ID and region variables.

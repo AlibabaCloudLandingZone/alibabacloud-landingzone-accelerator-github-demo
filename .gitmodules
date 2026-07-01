@@ -1,0 +1,3 @@
+[submodule "modules/lza"]
+	path = modules/lza
+	url = https://github.com/aliyun/landing-zone-accelerator-on-alibaba-cloud.git

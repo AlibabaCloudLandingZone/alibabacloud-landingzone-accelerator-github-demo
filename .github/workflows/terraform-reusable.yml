@@ -1,0 +1,117 @@
+name: Terraform Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        description: "Path to the Terraform stack directory"
+        required: true
+        type: string
+      terraform_version:
+        description: "Terraform version to use"
+        required: false
+        type: string
+        default: "1.9.5"
+      role_to_assume:
+        description: "Hub role ARN to assume via OIDC"
+        required: true
+        type: string
+      oidc_provider_arn:
+        description: "OIDC provider ARN in the hub account"
+        required: true
+        type: string
+      spoke_role_arn:
+        description: "Spoke role ARN for provider chaining (optional)"
+        required: false
+        type: string
+        default: ""
+      terraform_action:
+        description: "Action to perform: plan or apply"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: "Terraform ${{ inputs.terraform_action }}"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.terraform_action == 'apply' && 'production' || '' }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud credentials (OIDC)
+        uses: aliyun/configure-aliyun-credentials-action@v1
+        with:
+          role-to-assume: ${{ inputs.role_to_assume }}
+          oidc-provider-arn: ${{ inputs.oidc_provider_arn }}
+          audience: sts.aliyuncs.com
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        if: inputs.terraform_action == 'plan'
+        id: plan
+        env:
+          TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+        run: |
+          terraform plan -input=false -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+
+      - name: Upload Plan Artifact
+        if: inputs.terraform_action == 'plan'
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ inputs.working_directory }}
+          path: ${{ inputs.working_directory }}/plan.txt
+
+      - name: Comment Plan on PR
+        if: inputs.terraform_action == 'plan' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ inputs.working_directory }}/plan.txt', 'utf8');
+            const maxLength = 65000;
+            const truncatedPlan = plan.length > maxLength 
+              ? plan.substring(0, maxLength) + '\n... (truncated)'
+              : plan;
+            
+            const body = `#### Terraform Plan 📖 \`${{ inputs.working_directory }}\`
+            
+            <details>
+            <summary>Show Plan</summary>
+            
+            \`\`\`
+            ${truncatedPlan}
+            \`\`\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Terraform Apply
+        if: inputs.terraform_action == 'apply'
+        env:
+          TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+        run: terraform apply -input=false -auto-approve

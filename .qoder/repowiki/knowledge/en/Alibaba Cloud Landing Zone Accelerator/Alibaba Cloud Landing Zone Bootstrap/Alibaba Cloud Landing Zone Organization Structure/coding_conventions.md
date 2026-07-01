@@ -1,0 +1,3 @@
+- Resource naming uses descriptive lowercase identifiers with optional suffixes (e.g., 'this', 'core') for singleton or grouped resources.
+- Local variables consolidate computed values and maps for reuse across resources (root_folder_id from data source, core_accounts map for account provisioning).
+- Outputs expose structured maps (folder_ids, account_ids) rather than flat lists to facilitate downstream module consumption.

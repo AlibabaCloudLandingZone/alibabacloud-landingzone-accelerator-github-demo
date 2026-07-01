@@ -1,0 +1,35 @@
+name: "Bootstrap: 02 - Spoke Roles"
+
+on:
+  pull_request:
+    paths:
+      - "bootstrap/02-spoke-bootstrap/**"
+      - ".github/workflows/bootstrap-02-spoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "bootstrap/02-spoke-bootstrap/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/terraform-reusable.yml
+    with:
+      working_directory: bootstrap/02-spoke-bootstrap
+      role_to_assume: ${{ vars.GHA_APPLY_ROLE_ARN }}
+      oidc_provider_arn: ${{ vars.OIDC_PROVIDER_ARN }}
+      terraform_action: plan
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/terraform-reusable.yml
+    with:
+      working_directory: bootstrap/02-spoke-bootstrap
+      role_to_assume: ${{ vars.GHA_APPLY_ROLE_ARN }}
+      oidc_provider_arn: ${{ vars.OIDC_PROVIDER_ARN }}
+      terraform_action: apply

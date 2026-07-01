@@ -1,0 +1,2 @@
+- Provider configuration isolates region and role assumption into a dedicated `providers.tf` file.
+- Backend configuration is hardcoded in `versions.tf` with placeholder account IDs for CI/CD injection.

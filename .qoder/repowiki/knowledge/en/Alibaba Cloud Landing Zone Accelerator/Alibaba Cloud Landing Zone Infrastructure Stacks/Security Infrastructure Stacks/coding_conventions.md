@@ -1,0 +1,2 @@
+- Each stack uses a dedicated provider session name (e.g., `tf-security-firewall`) for auditability.
+- All stacks define `region` with a default of `cn-hangzhou` and require `spoke_role_arn` as an injected variable.

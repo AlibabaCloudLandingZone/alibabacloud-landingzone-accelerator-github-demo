@@ -1,0 +1,1 @@
+Credentials must be provided via environment variables ALICLOUD_ACCESS_KEY and ALICLOUD_SECRET_KEY (providers.tf lines 3-4). The Resource Directory enablement is a one-way switch — terraform destroy will not disable it (main.tf lines 3-4).

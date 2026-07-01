@@ -1,0 +1,1 @@
+Terraform >= 1.5 with aliyun/alicloud provider >= 1.262.1; state stored in OSS with Tablestore locking.

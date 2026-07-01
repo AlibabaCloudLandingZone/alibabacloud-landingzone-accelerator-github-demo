@@ -1,0 +1,1 @@
+Requires `TF_VAR_spoke_role_arn` environment variable to assume the target spoke role before applying.

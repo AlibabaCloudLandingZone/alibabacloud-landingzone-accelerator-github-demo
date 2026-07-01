@@ -1,0 +1,111 @@
+name: "Stacks: Deploy"
+
+on:
+  pull_request:
+    paths:
+      - "stacks/**"
+      - ".github/workflows/stacks.yml"
+  push:
+    branches: [main]
+    paths:
+      - "stacks/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack:
+          - { name: "10-identity-cloudsso", account_key: "devops" }
+          - { name: "11-log-archive", account_key: "log-archive" }
+          - { name: "12-guardrails-preventive", account_key: "devops" }
+          - { name: "13-guardrails-detective", account_key: "security" }
+          - { name: "20-network-cen", account_key: "network" }
+          - { name: "21-network-dmz", account_key: "network" }
+          - { name: "30-security-kms", account_key: "security" }
+          - { name: "30-security-firewall", account_key: "network" }
+          - { name: "30-security-waf", account_key: "shared" }
+    defaults:
+      run:
+        working-directory: stacks/${{ matrix.stack.name }}
+    env:
+      ACCOUNT_ID: ${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.account_key] }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud credentials (OIDC)
+        uses: aliyun/configure-aliyun-credentials-action@v1
+        with:
+          role-to-assume: ${{ vars.GHA_PLAN_ROLE_ARN }}
+          oidc-provider-arn: ${{ vars.OIDC_PROVIDER_ARN }}
+          audience: sts.aliyuncs.com
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokePlanRole"
+        run: |
+          terraform plan -input=false -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ matrix.stack.name }}
+          path: stacks/${{ matrix.stack.name }}/plan.txt
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      max-parallel: 1
+      matrix:
+        stack:
+          - { name: "10-identity-cloudsso", account_key: "devops" }
+          - { name: "11-log-archive", account_key: "log-archive" }
+          - { name: "12-guardrails-preventive", account_key: "devops" }
+          - { name: "13-guardrails-detective", account_key: "security" }
+          - { name: "20-network-cen", account_key: "network" }
+          - { name: "21-network-dmz", account_key: "network" }
+          - { name: "30-security-kms", account_key: "security" }
+          - { name: "30-security-firewall", account_key: "network" }
+          - { name: "30-security-waf", account_key: "shared" }
+    defaults:
+      run:
+        working-directory: stacks/${{ matrix.stack.name }}
+    env:
+      ACCOUNT_ID: ${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.account_key] }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud credentials (OIDC)
+        uses: aliyun/configure-aliyun-credentials-action@v1
+        with:
+          role-to-assume: ${{ vars.GHA_APPLY_ROLE_ARN }}
+          oidc-provider-arn: ${{ vars.OIDC_PROVIDER_ARN }}
+          audience: sts.aliyuncs.com
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeApplyRole"
+        run: terraform apply -input=false -auto-approve
