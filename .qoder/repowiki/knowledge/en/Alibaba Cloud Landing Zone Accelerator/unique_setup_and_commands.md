@@ -1,1 +1,0 @@
-Manual Phase 0 hygiene (MFA, Resource Directory) precedes a three-stage bootstrap (Org Structure, CICD Foundation, Spoke Roles) requiring state migration to OSS before pipeline-driven stack deployment begins.

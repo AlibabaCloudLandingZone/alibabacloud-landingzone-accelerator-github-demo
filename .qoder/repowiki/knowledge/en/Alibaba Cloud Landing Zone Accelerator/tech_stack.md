@@ -1,1 +1,0 @@
-GitHub Actions with OIDC federation, Terraform >= 1.5, Alibaba Cloud OSS/Tablestore backend

@@ -1,0 +1,1 @@
+All child stacks use the `aliyun/alicloud` Terraform provider (>= 1.262.1) with state stored in Alibaba Cloud OSS and Tablestore-based locking.

@@ -1,1 +1,0 @@
-Orchestrates the secure, phased provisioning of a multi-account Alibaba Cloud landing zone via GitHub Actions OIDC federation and modular Terraform stacks.

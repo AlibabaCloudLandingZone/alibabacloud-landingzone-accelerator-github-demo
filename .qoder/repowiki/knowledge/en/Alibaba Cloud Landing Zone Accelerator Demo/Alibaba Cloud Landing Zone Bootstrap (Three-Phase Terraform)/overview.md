@@ -1,0 +1,1 @@
+Orchestrates a three-phase, filesystem-ordered Terraform bootstrap that provisions the Alibaba Cloud Resource Directory, CI/CD state backends with GitHub Actions OIDC trust, and spoke-side cross-account IAM roles.

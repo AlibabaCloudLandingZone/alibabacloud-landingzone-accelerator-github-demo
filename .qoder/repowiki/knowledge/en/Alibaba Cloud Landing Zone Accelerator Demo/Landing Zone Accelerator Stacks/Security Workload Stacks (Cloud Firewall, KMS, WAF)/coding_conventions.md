@@ -1,0 +1,4 @@
+- Each stack defines its own `provider "alicloud"` block with a unique `session_name` (e.g. `tf-security-firewall`, `tf-security-kms`, `tf-security-waf`) so assume-role calls are individually auditable.
+- Every stack exposes identical input variables `region` (string, default `cn-hangzhou`) and `spoke_role_arn` (string, no default) consumed by both the provider's `assume_role` block and future component modules.
+- `main.tf` files follow a TODO-scaffold pattern: a header comment describing the workload, a commented-out `module` block referencing the corresponding `../../modules/lza/components/security/*` source, and a trailing `TODO` line marking implementation.
+- `versions.tf` pins a shared `required_version` and `alicloud` provider version while declaring an OSS backend whose `bucket` uses a `<CICD_ACCOUNT_ID>` placeholder and whose `prefix` equals the stack directory path for state isolation.

@@ -3,11 +3,11 @@ schema_version: 1
 locale: en-US
 branch: main
 nodes_managed: true
-exported_at: "2026-07-01T00:13:27Z"
+exported_at: "2026-07-01T14:12:29Z"
 modules:
     "":
-        dir_name: Alibaba Cloud Landing Zone Accelerator
-        title: Alibaba Cloud Landing Zone Accelerator
+        dir_name: Alibaba Cloud Landing Zone Accelerator Demo
+        title: Alibaba Cloud Landing Zone Accelerator Demo
         scope:
             - README.md
             - .gitignore
@@ -20,8 +20,8 @@ modules:
         depends_on: []
         related_to: []
     bootstrap:
-        dir_name: Alibaba Cloud Landing Zone Bootstrap
-        title: Alibaba Cloud Landing Zone Bootstrap
+        dir_name: Alibaba Cloud Landing Zone Bootstrap (Three-Phase Terraform)
+        title: Alibaba Cloud Landing Zone Bootstrap (Three-Phase Terraform)
         scope:
             - bootstrap/
         source_files: []
@@ -33,8 +33,8 @@ modules:
         related_to:
             - path: infrastructure_stacks
     bootstrap/cicd_foundation:
-        dir_name: CI_CD Foundation Bootstrap
-        title: CI/CD Foundation Bootstrap
+        dir_name: CICD Foundation Bootstrap (OIDC State & Hub Roles)
+        title: CICD Foundation Bootstrap (OIDC State & Hub Roles)
         scope:
             - bootstrap/01-cicd-foundation/
         source_files: []
@@ -44,8 +44,8 @@ modules:
             - path: bootstrap/spoke_bootstrap
             - path: infrastructure_stacks
     bootstrap/org_structure:
-        dir_name: Alibaba Cloud Landing Zone Organization Structure
-        title: Alibaba Cloud Landing Zone Organization Structure
+        dir_name: Resource Directory & Core Accounts Bootstrap
+        title: Resource Directory & Core Accounts Bootstrap
         scope:
             - bootstrap/00-org-structure/
         source_files: []
@@ -54,8 +54,8 @@ modules:
         related_to:
             - path: bootstrap/spoke_bootstrap
     bootstrap/spoke_bootstrap:
-        dir_name: Spoke Account IAM Bootstrap
-        title: Spoke Account IAM Bootstrap
+        dir_name: Spoke Account Bootstrap — Cross-Account IAM Role Provisioning
+        title: Spoke Account Bootstrap — Cross-Account IAM Role Provisioning
         scope:
             - bootstrap/02-spoke-bootstrap/
         source_files: []
@@ -128,9 +128,17 @@ modules:
         children: []
         depends_on: []
         related_to: []
+    frontend_style:
+        dir_name: No frontend style system — IaC-only repository
+        title: No frontend style system — IaC-only repository
+        scope: []
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
     infrastructure_stacks:
-        dir_name: Alibaba Cloud Landing Zone Infrastructure Stacks
-        title: Alibaba Cloud Landing Zone Infrastructure Stacks
+        dir_name: Landing Zone Accelerator Stacks
+        title: Landing Zone Accelerator Stacks
         scope:
             - stacks/
         source_files: []
@@ -145,8 +153,8 @@ modules:
             - path: bootstrap
             - path: bootstrap/cicd_foundation
     infrastructure_stacks/guardrails:
-        dir_name: Guardrails Infrastructure Stacks
-        title: Guardrails Infrastructure Stacks
+        dir_name: Guardrails Stacks — Preventive & Detective Policies
+        title: Guardrails Stacks — Preventive & Detective Policies
         scope:
             - stacks/12-guardrails-preventive/
             - stacks/13-guardrails-detective/
@@ -156,8 +164,8 @@ modules:
         related_to:
             - path: bootstrap/spoke_bootstrap
     infrastructure_stacks/identity_cloudsso:
-        dir_name: Alibaba Cloud SSO Identity Stack
-        title: Alibaba Cloud SSO Identity Stack
+        dir_name: CloudSSO Identity Stack (Placeholder)
+        title: CloudSSO Identity Stack (Placeholder)
         scope:
             - stacks/10-identity-cloudsso/
         source_files: []
@@ -166,8 +174,8 @@ modules:
         related_to:
             - path: bootstrap/spoke_bootstrap
     infrastructure_stacks/log_archive:
-        dir_name: Log Archive Infrastructure Stack
-        title: Log Archive Infrastructure Stack
+        dir_name: Log Archive Stack (SLS Audit Log Centralization)
+        title: Log Archive Stack (SLS Audit Log Centralization)
         scope:
             - stacks/11-log-archive/
         source_files: []
@@ -176,8 +184,8 @@ modules:
         related_to:
             - path: bootstrap/spoke_bootstrap
     infrastructure_stacks/network:
-        dir_name: Alibaba Cloud Network Infrastructure Stacks
-        title: Alibaba Cloud Network Infrastructure Stacks
+        dir_name: Network Topology Stacks (CEN Hub & DMZ VPC)
+        title: Network Topology Stacks (CEN Hub & DMZ VPC)
         scope:
             - stacks/20-network-cen/
             - stacks/21-network-dmz/
@@ -187,8 +195,8 @@ modules:
         related_to:
             - path: bootstrap/spoke_bootstrap
     infrastructure_stacks/security:
-        dir_name: Security Infrastructure Stacks
-        title: Security Infrastructure Stacks
+        dir_name: Security Workload Stacks (Cloud Firewall, KMS, WAF)
+        title: Security Workload Stacks (Cloud Firewall, KMS, WAF)
         scope:
             - stacks/30-security-firewall/
             - stacks/30-security-kms/
@@ -198,3 +206,18 @@ modules:
         depends_on: []
         related_to:
             - path: bootstrap/spoke_bootstrap
+    logging_system:
+        dir_name: Alibaba Cloud Log Archive and Audit Infrastructure
+        title: Alibaba Cloud Log Archive and Audit Infrastructure
+        scope: []
+        source_files:
+            - modules/lza/components/log-archive/actiontrail/main.tf
+            - modules/lza/components/log-archive/config/main.tf
+            - modules/lza/components/log-archive/log-audit/main.tf
+            - modules/lza/components/log-archive/event-alert/main.tf
+            - bootstrap/02-spoke-bootstrap/main.tf
+            - .github/workflows/stacks.yml
+            - stacks/11-log-archive/main.tf
+        children: []
+        depends_on: []
+        related_to: []

@@ -1,5 +1,0 @@
-- Uses dual `alicloud` providers: `mgmt` (management account) and `cicd` (assumed via `ResourceDirectoryAccountAccessRole`) to isolate execution context.
-- Creates OSS bucket with KMS encryption/versioning and OTS table for Terraform remote state and locking within the CICD account.
-- Establishes GitHub Actions OIDC provider (`alicloud_ims_oidc_provider`) and two RAM roles (`GitHubActionsPlanRole`, `GitHubActionsApplyRole`) with distinct trust policies for PR plans and production applies.
-- Attaches a shared `HubStateAccess` policy granting OSS/OTS state access and cross-account `sts:AssumeRole` on spoke roles.
-- Defers backend migration: initial apply uses local state, with `backend.tf.example` providing the OSS backend config and STS credential steps for `terraform init -migrate-state`.

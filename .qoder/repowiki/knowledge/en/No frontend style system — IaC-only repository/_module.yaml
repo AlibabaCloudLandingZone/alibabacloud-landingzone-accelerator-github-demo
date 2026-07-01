@@ -1,0 +1,7 @@
+schema_version: 1
+module_path: frontend_style
+title: No frontend style system — IaC-only repository
+scope: []
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: error_handling
+title: Terraform and CI/CD Pipeline Error Handling
+scope: []
+source_files:
+    - .github/workflows/terraform-reusable.yml
+    - .github/workflows/stacks.yml
+    - bootstrap/01-cicd-foundation/main.tf
+depends_on: []
+related_to: []

@@ -1,0 +1,13 @@
+schema_version: 1
+module_path: configuration_system
+title: Terraform & GitHub Actions Configuration System
+scope: []
+source_files:
+    - .github/workflows/stacks.yml
+    - .github/workflows/terraform-reusable.yml
+    - bootstrap/01-cicd-foundation/backend.tf.example
+    - bootstrap/02-spoke-bootstrap/variables.tf
+    - stacks/20-network-cen/variables.tf
+    - README.md
+depends_on: []
+related_to: []

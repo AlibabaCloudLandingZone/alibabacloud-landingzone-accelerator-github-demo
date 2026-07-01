@@ -1,0 +1,4 @@
+- Child directories are prefixed `00-`, `01-`, `02-` so filesystem sorting enforces sequential execution order
+- Every child pins minimum versions in `versions.tf` (Terraform >= 1.5, alicloud provider >= 1.262.1)
+- Cross-account targeting uses named `provider "alicloud" { alias = ... }` blocks with `assume_role` on `ResourceDirectoryAccountAccessRole` instead of dynamic configuration
+- Reusable logic is extracted into sibling `modules/` subdirectories (e.g. `02-spoke-bootstrap/modules/spoke-roles`) and instantiated multiple times via different provider aliases

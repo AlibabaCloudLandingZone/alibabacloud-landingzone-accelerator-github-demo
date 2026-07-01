@@ -1,0 +1,4 @@
+- Each stack keeps provider configuration isolated in `providers.tf` and version constraints in `versions.tf`, never mixing them into `main.tf`.
+- Cross-account access is enforced uniformly through an `assume_role` block inside the `alicloud` provider, driven by the `spoke_role_arn` variable rather than static credentials.
+- Stacks are numbered by deployment order (`20-`, `21-`) and follow a uniform variable contract: `region` (string, default `cn-hangzhou`) and `spoke_role_arn` (string, injected via `TF_VAR_spoke_role_arn`).
+- Production intent is documented inline with commented-out `module "..." { source = "../../modules/lza/components/..." }` blocks showing where direct resources should be replaced by vendored LZA modules.

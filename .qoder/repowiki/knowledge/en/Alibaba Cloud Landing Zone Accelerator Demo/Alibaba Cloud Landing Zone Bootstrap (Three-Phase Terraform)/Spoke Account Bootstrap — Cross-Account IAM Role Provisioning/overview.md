@@ -1,0 +1,1 @@
+Bootstraps Alibaba Cloud spoke member accounts by creating plan/apply RAM roles trusted by hub GitHub Actions OIDC roles, enabling centralized CI/CD-driven Terraform operations across accounts.

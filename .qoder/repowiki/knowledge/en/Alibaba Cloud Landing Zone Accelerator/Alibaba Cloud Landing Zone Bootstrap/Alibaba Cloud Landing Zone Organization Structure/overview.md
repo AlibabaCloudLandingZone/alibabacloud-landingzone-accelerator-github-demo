@@ -1,1 +1,0 @@
-Provisions the foundational Resource Directory hierarchy and core member accounts for an Alibaba Cloud landing zone.

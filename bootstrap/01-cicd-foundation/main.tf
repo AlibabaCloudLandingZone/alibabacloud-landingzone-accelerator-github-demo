@@ -1,9 +1,33 @@
 # =============================================================================
+# 0. Pre-flight checks and service activation
+# =============================================================================
+
+data "alicloud_account" "current" {}
+
+resource "terraform_data" "account_id_check" {
+  lifecycle {
+    precondition {
+      condition     = data.alicloud_account.current.id == var.cicd_account_id
+      error_message = "SAFETY CHECK FAILED: Current account (${data.alicloud_account.current.id}) does not match the expected CICD account (${var.cicd_account_id}). Ensure you have assumed role into the correct account."
+    }
+  }
+}
+
+data "alicloud_oss_service" "open" {
+  enable = "On"
+}
+
+# =============================================================================
 # 1. State infrastructure inside the CICD account
 # =============================================================================
 
+locals {
+  tfstate_bucket_name = var.tfstate_bucket_name
+}
+
 resource "alicloud_oss_bucket" "tfstate" {
-  bucket        = "tfstate-${var.cicd_account_id}-${var.region}"
+  depends_on    = [data.alicloud_oss_service.open]
+  bucket        = local.tfstate_bucket_name
   storage_class = "Standard"
 
   versioning {
@@ -24,7 +48,7 @@ resource "alicloud_oss_bucket" "tfstate" {
 }
 
 resource "alicloud_ots_instance" "tflock" {
-  name          = "tfstate-lock"
+  name          = var.tfstate_lock_instance_name
   instance_type = "Capacity"
 }
 
@@ -102,41 +126,66 @@ resource "alicloud_ram_role" "github_apply" {
 
 # =============================================================================
 # 4. Hub role policies
-#    Both roles need: OSS/OTS access to state infra + sts:AssumeRole on spokes
+#    Plan role: read state + assume SpokePlanRole
+#    Apply role: read/write state + assume SpokeApplyRole
 # =============================================================================
 
-resource "alicloud_ram_policy" "hub_state_access" {
-  policy_name = "HubStateAccess"
+resource "alicloud_ram_policy" "hub_chain_plan" {
+  policy_name = "HubChainPlan"
   policy_document = jsonencode({
     Version = "1"
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["oss:GetObject", "oss:PutObject", "oss:DeleteObject", "oss:ListObjects", "oss:GetBucket"]
+        Action   = "sts:AssumeRole"
+        Resource = ["acs:ram::*:role/SpokePlanRole"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["oss:GetObject", "oss:ListObjects", "oss:GetBucketInfo"]
         Resource = ["acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}", "acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}/*"]
       },
       {
         Effect   = "Allow"
-        Action   = ["ots:*"]
-        Resource = ["*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["sts:AssumeRole"]
-        Resource = ["acs:ram::*:role/SpokePlanRole", "acs:ram::*:role/SpokeApplyRole"]
+        Action   = "ots:*"
+        Resource = ["acs:ots:*:*:instance/${alicloud_ots_instance.tflock.name}", "acs:ots:*:*:instance/${alicloud_ots_instance.tflock.name}/*"]
       }
     ]
   })
 }
 
-resource "alicloud_ram_role_policy_attachment" "plan_state" {
+resource "alicloud_ram_policy" "hub_chain_apply" {
+  policy_name = "HubChainApply"
+  policy_document = jsonencode({
+    Version = "1"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = ["acs:ram::*:role/SpokeApplyRole"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["oss:GetObject", "oss:ListObjects", "oss:GetBucketInfo", "oss:PutObject", "oss:DeleteObject"]
+        Resource = ["acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}", "acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = "ots:*"
+        Resource = ["acs:ots:*:*:instance/${alicloud_ots_instance.tflock.name}", "acs:ots:*:*:instance/${alicloud_ots_instance.tflock.name}/*"]
+      }
+    ]
+  })
+}
+
+resource "alicloud_ram_role_policy_attachment" "plan" {
   role_name   = alicloud_ram_role.github_plan.role_name
-  policy_name = alicloud_ram_policy.hub_state_access.policy_name
+  policy_name = alicloud_ram_policy.hub_chain_plan.policy_name
   policy_type = "Custom"
 }
 
-resource "alicloud_ram_role_policy_attachment" "apply_state" {
+resource "alicloud_ram_role_policy_attachment" "apply" {
   role_name   = alicloud_ram_role.github_apply.role_name
-  policy_name = alicloud_ram_policy.hub_state_access.policy_name
+  policy_name = alicloud_ram_policy.hub_chain_apply.policy_name
   policy_type = "Custom"
 }

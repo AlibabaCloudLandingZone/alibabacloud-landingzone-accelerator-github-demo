@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: infrastructure_stacks/log_archive
+title: Log Archive Stack (SLS Audit Log Centralization)
+scope:
+    - stacks/11-log-archive/
+source_files: []
+depends_on: []
+related_to:
+    - path: bootstrap/spoke_bootstrap

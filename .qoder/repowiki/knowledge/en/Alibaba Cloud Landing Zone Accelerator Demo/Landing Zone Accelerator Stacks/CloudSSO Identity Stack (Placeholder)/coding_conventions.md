@@ -1,0 +1,4 @@
+- Stack-level providers are declared per-stack in `providers.tf` and assume a spoke role via `assume_role` rather than relying on global credentials, enforcing least-privilege cross-account execution.
+- Each stack uses a single `backend "oss"` block with a `prefix` matching its directory path (`stacks/<number>-<name>`) to isolate state files while sharing one Tablestore lock table across all stacks.
+- Variables are typed with explicit `type` and `description` fields, and sensitive inputs like `spoke_role_arn` are documented as injected via environment variables (`TF_VAR_*`).
+- Stub modules document their intended future composition inline in `main.tf` comments pointing at the canonical reusable module source path under `modules/lza/components/...`.

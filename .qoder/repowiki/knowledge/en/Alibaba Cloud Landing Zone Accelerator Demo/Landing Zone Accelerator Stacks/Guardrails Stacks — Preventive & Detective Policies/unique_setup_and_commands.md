@@ -1,0 +1,1 @@
+Requires `TF_VAR_spoke_role_arn` environment variable to supply the spoke role ARN before running `terraform init`/`plan`/`apply` in either stack directory.

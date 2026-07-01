@@ -1,0 +1,4 @@
+Two independent Terraform stacks, each self-contained with its own `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, and `versions.tf`:
+- `20-network-cen`: deploys an `alicloud_cen_instance` resource directly into the network spoke account; production usage is intended to be replaced by sourcing the vendored LZA module at `../../modules/lza/components/network/cen-instance`.
+- `21-network-dmz`: currently a skeleton with a TODO comment for DMZ VPC/NAT/EIP; production will source `../../modules/lza/components/network/dmz`.
+Both stacks target the same Alibaba Cloud provider via `assume_role` using the `spoke_role_arn` variable, so they run against separate spoke accounts while sharing identical region/role conventions. Outputs expose only what each stack owns (e.g. `cen_id`) for downstream stacks to consume.

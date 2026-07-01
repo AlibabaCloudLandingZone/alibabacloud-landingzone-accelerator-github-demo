@@ -1,0 +1,3 @@
+- Every module-specific pipeline calls the single reusable workflow `terraform-reusable.yml` rather than duplicating init/plan/apply steps.
+- Workflow triggers are path-scoped to the target directory (e.g. `bootstrap/00-org-structure/**`) so changes only fire relevant runs.
+- Spoke account targeting uses a JSON map variable `SPOKE_ACCOUNT_IDS_JSON` expanded into a matrix strategy across both bootstrap and stack workflows.

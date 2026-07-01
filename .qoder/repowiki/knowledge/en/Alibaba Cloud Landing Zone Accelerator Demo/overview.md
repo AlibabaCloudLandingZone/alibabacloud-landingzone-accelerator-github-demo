@@ -1,0 +1,1 @@
+Top-level demo repo that wires a three-phase Terraform bootstrap and matrix-driven spoke stacks together via reusable GitHub Actions workflows using OIDC-based credential chaining.

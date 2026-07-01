@@ -1,0 +1,1 @@
+Requires `TF_VAR_spoke_role_arn` environment variable set to the target spoke role ARN before any `terraform init`/`apply`; the OSS bucket name in `versions.tf` still contains the `<CICD_ACCOUNT_ID>` placeholder and must be replaced with the actual CICD account ID prior to first run.

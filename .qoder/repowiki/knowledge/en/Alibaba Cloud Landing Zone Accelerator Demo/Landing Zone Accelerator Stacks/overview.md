@@ -1,0 +1,1 @@
+Numbered Terraform stack collection that provisions Alibaba Cloud Landing Zone resources (identity, network, security, logging, guardrails) against a spoke role via shared OSS state.

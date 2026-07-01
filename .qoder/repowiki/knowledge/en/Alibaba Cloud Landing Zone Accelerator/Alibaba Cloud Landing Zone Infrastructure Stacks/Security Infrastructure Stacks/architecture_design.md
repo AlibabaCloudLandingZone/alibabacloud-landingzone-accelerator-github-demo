@@ -1,4 +1,0 @@
-- The module consists of three independent Terraform stacks: `30-security-firewall`, `30-security-kms`, and `30-security-waf`.
-- Each stack follows a standard Terraform layout (`main.tf`, `variables.tf`, `providers.tf`, `outputs.tf`, `versions.tf`) but currently contains only TODO comments indicating future integration with `../../modules/lza/components/security/*`.
-- All stacks configure the `alicloud` provider to assume a spoke role via `var.spoke_role_arn`, enforcing a cross-account deployment pattern.
-- Inputs are standardized across stacks, requiring `region` and `spoke_role_arn`.

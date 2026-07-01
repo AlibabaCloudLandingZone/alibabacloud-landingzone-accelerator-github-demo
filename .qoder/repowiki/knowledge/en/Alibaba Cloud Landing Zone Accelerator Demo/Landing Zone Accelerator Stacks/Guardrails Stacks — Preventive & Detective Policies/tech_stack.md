@@ -1,0 +1,1 @@
+Terraform with the `alicloud` provider; cross-account access is achieved through RAM role assumption via `assume_role` blocks rather than static credentials.

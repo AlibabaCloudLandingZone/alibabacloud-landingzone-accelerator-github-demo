@@ -1,0 +1,1 @@
+Terraform >= 1.5 with Alibaba Cloud Provider (`alicloud`) pinned at 1.280.0 per `.terraform.lock.hcl`; state backend uses OSS + Tablestore locking as configured at the repo root.

@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: infrastructure_stacks/network
+title: Network Topology Stacks (CEN Hub & DMZ VPC)
+scope:
+    - stacks/20-network-cen/
+    - stacks/21-network-dmz/
+source_files: []
+depends_on: []
+related_to:
+    - path: bootstrap/spoke_bootstrap

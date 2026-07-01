@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: bootstrap
+title: Alibaba Cloud Landing Zone Bootstrap (Three-Phase Terraform)
+scope:
+    - bootstrap/
+source_files: []
+depends_on: []
+related_to:
+    - path: infrastructure_stacks

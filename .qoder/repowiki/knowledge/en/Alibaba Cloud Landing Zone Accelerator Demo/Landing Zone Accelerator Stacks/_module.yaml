@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: infrastructure_stacks
+title: Landing Zone Accelerator Stacks
+scope:
+    - stacks/
+source_files: []
+depends_on: []
+related_to:
+    - path: bootstrap
+    - path: bootstrap/cicd_foundation

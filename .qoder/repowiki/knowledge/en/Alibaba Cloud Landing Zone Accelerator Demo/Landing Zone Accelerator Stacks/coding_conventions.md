@@ -1,0 +1,3 @@
+- Every stack declares `region` and `spoke_role_arn` as input variables with identical descriptions and defaults.
+- Provider blocks uniformly configure `assume_role` using a stack-specific `session_name` and a fixed `session_expiration` of 3600 seconds.
+- Backend configurations consistently reference the same OSS bucket pattern `tfstate-<CICD_ACCOUNT_ID>-cn-hangzhou` and Tablestore endpoint for state management.

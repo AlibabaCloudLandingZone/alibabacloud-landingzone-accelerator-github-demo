@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: logging_system
+title: Alibaba Cloud Log Archive and Audit Infrastructure
+scope: []
+source_files:
+    - modules/lza/components/log-archive/actiontrail/main.tf
+    - modules/lza/components/log-archive/config/main.tf
+    - modules/lza/components/log-archive/log-audit/main.tf
+    - modules/lza/components/log-archive/event-alert/main.tf
+    - bootstrap/02-spoke-bootstrap/main.tf
+    - .github/workflows/stacks.yml
+    - stacks/11-log-archive/main.tf
+depends_on: []
+related_to: []

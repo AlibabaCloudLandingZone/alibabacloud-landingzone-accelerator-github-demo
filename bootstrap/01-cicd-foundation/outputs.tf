@@ -1,3 +1,8 @@
+output "current_account_id" {
+  description = "Account ID of the current provider context (should match cicd_account_id)"
+  value       = data.alicloud_account.current.id
+}
+
 output "tfstate_bucket" {
   description = "OSS bucket for Terraform state"
   value       = alicloud_oss_bucket.tfstate.bucket

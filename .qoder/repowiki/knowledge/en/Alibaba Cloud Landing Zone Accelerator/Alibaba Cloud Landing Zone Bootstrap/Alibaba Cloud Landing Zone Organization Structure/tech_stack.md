@@ -1,1 +1,0 @@
-Terraform >= 1.5 with alicloud provider >= 1.262.1 (aliyun/alicloud); local backend initially, migrated to OSS in phase 2 per versions.tf comment.

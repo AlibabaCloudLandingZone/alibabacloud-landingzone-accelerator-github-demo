@@ -1,0 +1,3 @@
+- Each stack mirrors the same five-file layout (`main.tf`, `providers.tf`, `variables.tf`, `outputs.tf`, `versions.tf`) so new guardrail stacks can be scaffolded by copy-paste.
+- Provider blocks use `assume_role` with a fixed `session_expiration = 3600` and a `session_name` derived from the stack type (`tf-guardrails-<type>`), ensuring predictable IAM session identity.
+- Variables are declared identically across stacks — `region` defaulting to `cn-hangzhou` and required `spoke_role_arn` — so callers pass the same input shape regardless of preventive vs. detective intent.

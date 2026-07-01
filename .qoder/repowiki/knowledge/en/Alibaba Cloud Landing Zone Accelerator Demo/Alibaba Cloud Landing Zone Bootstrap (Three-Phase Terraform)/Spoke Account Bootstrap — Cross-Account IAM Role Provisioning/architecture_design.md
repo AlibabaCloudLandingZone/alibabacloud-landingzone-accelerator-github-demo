@@ -1,0 +1,5 @@
+Two-layer Terraform layout driven from the management account:
+- Root module (`main.tf`, `providers.tf`) declares one `alicloud` provider alias per spoke (log-archive, security, network, shared, devops), each chaining through `ResourceDirectoryAccountAccessRole` via `assume_role` and targeting the spoke's region/account from the `spokes` map.
+- Reusable child module `modules/spoke-roles/main.tf` creates a fixed pair of RAM roles per spoke: `SpokePlanRole` (trusted by `GitHubActionsPlanRole`, attached `ReadOnlyAccess`) and `SpokeApplyRole` (trusted by `GitHubActionsApplyRole`, attached `AdministratorAccess`).
+- Dependency direction is strictly root → child; spokes are parameterized only by `hub_account_id` so the same role definitions apply uniformly across all member accounts.
+- Provider configuration assumes the Resource Directory trust boundary established in phase 0, making this module the first spoke-side bootstrap step before workload stacks run.

@@ -1,0 +1,1 @@
+Terraform with the Alibaba Cloud provider (`aliyun/alicloud`) across all three phases; state managed via OSS buckets with KMS encryption and OTS lock tables created in phase 1.

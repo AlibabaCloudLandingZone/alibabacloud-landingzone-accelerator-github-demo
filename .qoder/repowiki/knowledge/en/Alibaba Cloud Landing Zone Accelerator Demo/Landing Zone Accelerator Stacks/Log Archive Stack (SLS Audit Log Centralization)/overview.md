@@ -1,0 +1,1 @@
+Terraform stack scaffold for centralizing Alibaba Cloud SLS audit logs across accounts, awaiting integration with the reusable LZA log-archive module.

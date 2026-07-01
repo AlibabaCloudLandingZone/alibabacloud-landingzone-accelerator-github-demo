@@ -1,4 +1,0 @@
-- Centralized CI/CD orchestration: A reusable GitHub Actions workflow (`terraform-reusable.yml`) standardizes Terraform execution (init/plan/apply) for both bootstrap and infrastructure stack modules.
-- Secure credential chaining: GitHub OIDC tokens are exchanged for short-lived STS tokens, assuming a Hub role in the CICD account which then assumes Spoke roles in member accounts, eliminating long-lived credentials.
-- Phased deployment model: The root module defines a strict execution order where `bootstrap` modules establish the organizational structure and IAM trust boundaries required before `infrastructure_stacks` can be deployed via matrix-driven workflows.
-- Shared state management: All child modules rely on a centralized OSS backend with Tablestore locking, provisioned during the bootstrap phase and referenced by subsequent infrastructure stacks.

@@ -1,1 +1,0 @@
-Provisions Alibaba Cloud state infrastructure and OIDC-based IAM roles for secure GitHub Actions Terraform workflows.

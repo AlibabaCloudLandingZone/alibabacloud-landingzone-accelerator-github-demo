@@ -1,0 +1,3 @@
+- Each spoke account receives identical IAM resources instantiated by calling the same `./modules/spoke-roles` source with a distinct provider alias injected via the `providers = { alicloud = alicloud.<alias> }` mapping.
+- Provider aliases follow a kebab-to-snake naming convention matching the spoke identifier keys in the `spokes` variable (e.g. `log_archive` ↔ `log-archive`) and assume `ResourceDirectoryAccountAccessRole` with session name `spoke-bootstrap`.
+- Cross-account trust relationships are expressed as static `acs:ram::${var.hub_account_id}:role/GitHubActions*Role` principals inside `assume_role_policy_document`, keeping the hub identity as the single source of truth.

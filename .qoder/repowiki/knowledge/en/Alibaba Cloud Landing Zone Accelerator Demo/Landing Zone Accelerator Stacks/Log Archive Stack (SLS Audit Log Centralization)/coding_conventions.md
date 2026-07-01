@@ -1,0 +1,2 @@
+- Provider configuration is isolated in a dedicated `providers.tf` file and uses `var.region` plus an `assume_role` block rather than inline provider arguments.
+- Stack-level variables are declared in `variables.tf` with explicit `type` and `description` fields, keeping runtime inputs separate from provider wiring.

@@ -9,6 +9,17 @@ variable "cicd_account_id" {
   type        = string
 }
 
+variable "tfstate_bucket_name" {
+  description = "Name of the OSS bucket for Terraform state storage"
+  type        = string
+}
+
+variable "tfstate_lock_instance_name" {
+  description = "Name of the Tablestore instance for Terraform state locking"
+  type        = string
+  default     = "tfstate-lock"
+}
+
 variable "github_org_repo" {
   description = "GitHub org/repo identifier, e.g. 'my-org/landing-zone'"
   type        = string

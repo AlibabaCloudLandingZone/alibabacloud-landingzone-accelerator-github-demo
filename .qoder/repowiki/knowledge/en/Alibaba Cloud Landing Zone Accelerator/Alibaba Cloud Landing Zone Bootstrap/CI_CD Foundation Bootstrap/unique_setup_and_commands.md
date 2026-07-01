@@ -1,1 +1,0 @@
-Initial apply requires local backend; post-apply migration to OSS backend needs STS credentials obtained via `aliyun sts AssumeRole` on the CICD account's `ResourceDirectoryAccountAccessRole`, followed by `terraform init -migrate-state` as documented in `backend.tf.example`.

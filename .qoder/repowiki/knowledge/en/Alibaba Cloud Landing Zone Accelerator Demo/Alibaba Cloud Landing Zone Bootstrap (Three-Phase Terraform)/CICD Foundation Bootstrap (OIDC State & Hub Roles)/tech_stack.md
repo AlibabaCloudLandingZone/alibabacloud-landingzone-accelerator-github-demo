@@ -1,0 +1,1 @@
+Terraform >= 1.5 with `aliyun/alicloud` provider >= 1.262.1; Alibaba Cloud OSS + Tablestore as the remote state backend; RAM + IMS OIDC for GitHub Actions identity federation.

@@ -1,0 +1,4 @@
+- All resources explicitly set `provider = alicloud.cicd` to enforce deployment into the CICD member account rather than the management account.
+- RAM role trust policies use JSON-encoded `Condition` blocks with `oidc:sub` constraints (`repo:<org>/<repo>:pull_request` vs `:environment:production`) to separate plan-time and apply-time permissions.
+- State infrastructure resource names are deterministic prefixes (`tfstate-`, `tfstate-lock`, `tflock`) derived from `var.cicd_account_id` and `var.region` variables.
+- Cross-account delegation is expressed via explicit `assume_role` blocks on aliased providers (`cicd` alias assumes `ResourceDirectoryAccountAccessRole`) instead of inline STS calls.
