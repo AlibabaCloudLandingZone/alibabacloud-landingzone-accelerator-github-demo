@@ -5,5 +5,4 @@ scope:
     - bootstrap/
 source_files: []
 depends_on: []
-related_to:
-    - path: infrastructure_stacks
+related_to: []

@@ -1,0 +1,18 @@
+schema_version: 1
+module_path: configuration_system
+title: Terraform-Based Configuration System with GitHub Actions CI/CD
+scope: []
+source_files:
+    - bootstrap/00-org-structure/main.tf
+    - bootstrap/01-cicd-foundation/backend.tf.example
+    - bootstrap/02-spoke-bootstrap/main.tf
+    - stacks/10-identity-cloudsso/main.tf
+    - stacks/11-log-archive/main.tf
+    - stacks/20-network-cen/main.tf
+    - modules/lza/components/account-factory/baseline/main.tf
+    - modules/lza/components/guardrails/preventive/main.tf
+    - .github/workflows/bootstrap-00-org-structure.yml
+    - .github/workflows/bootstrap-01-cicd-foundation.yml
+    - .github/workflows/bootstrap-02-spoke.yml
+depends_on: []
+related_to: []

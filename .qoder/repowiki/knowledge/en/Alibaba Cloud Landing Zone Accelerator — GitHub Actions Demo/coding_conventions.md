@@ -1,0 +1,6 @@
+- Each Terraform workspace (bootstrap phase, stack, or LZA component) ships a fixed quartet of files: `main.tf`, `outputs.tf`, `variables.tf`, `versions.tf`, plus a `providers.tf` when provider configuration differs from defaults.
+- Reusable modules under `modules/lza/components/*` and `modules/lza/modules/*` are documented with paired bilingual READMEs (`README.md` and `README-CN.md`) describing inputs, outputs, and usage.
+- Stack directories are prefixed with numeric ordering (`10-`, `11-`, `20-`, `30-`) to encode deployment dependency order across identity, logging, guardrails, networking, and security categories.
+- CI jobs separate read-only planning from write operations: pull-request triggers run `terraform plan` and comment the diff, while pushes to `main` gated by the `production` environment run `terraform apply -auto-approve`.
+- Cross-account access follows a two-hop role chain: the workflow assumes a hub role in the CICD account, which in turn assumes a spoke role (`SpokePlanRole` / `SpokeApplyRole`) scoped to the target member account, never using static AccessKeys.
+- State backends are provisioned by the CICD foundation stack and referenced via `backend.tf.example`; existing local states are migrated with `terraform init -migrate-state` rather than recreated.

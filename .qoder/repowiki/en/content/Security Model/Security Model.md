@@ -12,38 +12,36 @@
 - [bootstrap/02-spoke-bootstrap/main.tf](file://bootstrap/02-spoke-bootstrap/main.tf)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf)
 - [bootstrap/02-spoke-bootstrap/variables.tf](file://bootstrap/02-spoke-bootstrap/variables.tf)
-- [bootstrap/00-org-structure/main.tf](file://bootstrap/00-org-structure/main.tf)
-- [stacks/20-network-cen/main.tf](file://stacks/20-network-cen/main.tf)
 </cite>
 
 ## Update Summary
 **Changes Made**
-- Enhanced OIDC federation implementation details with specific token exchange mechanisms
-- Updated hub role configuration with environment-based restrictions and GitHub Actions conditions
-- Expanded spoke role architecture with explicit trust relationships and least-privilege principles
-- Detailed encrypted state management with OSS versioning and Tablestore distributed locking
-- Added comprehensive threat modeling and security controls analysis
-- Enhanced compliance considerations and audit capabilities documentation
+- Enhanced role chaining mechanism documentation with proper least-privilege principles
+- Updated policy separation between planning (read-only) and applying (read-write) operations
+- Improved credential flow documentation from GitHub OIDC tokens through hub roles to spoke roles
+- Added detailed security boundary enforcement and trust relationship validation
+- Enhanced threat modeling with specific attack vector mitigations
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Zero-Trust Architecture Overview](#zero-trust-architecture-overview)
-3. [OIDC Federation Implementation](#oidc-federation-implementation)
-4. [Hub Account Security Model](#hub-account-security-model)
-5. [Spoke Account Isolation](#spoke-account-isolation)
-6. [Credential Flow and Token Exchange](#credential-flow-and-token-exchange)
-7. [Encrypted State Management](#encrypted-state-management)
-8. [Distributed Locking and Concurrency Control](#distributed-locking-and-concurrency-control)
-9. [IAM Role Design Patterns](#iam-role-design-patterns)
-10. [Security Controls and Threat Mitigation](#security-controls-and-threat-mitigation)
-11. [Compliance and Audit Capabilities](#compliance-and-audit-capabilities)
-12. [Security Monitoring and Incident Response](#security-monitoring-and-incident-response)
-13. [Performance Considerations](#performance-considerations)
-14. [Troubleshooting Guide](#troubleshooting-guide)
-15. [Conclusion](#conclusion)
+3. [Enhanced Role Chaining Mechanism](#enhanced-role-chaining-mechanism)
+4. [OIDC Federation Implementation](#oidc-federation-implementation)
+5. [Hub Account Security Model](#hub-account-security-model)
+6. [Spoke Account Isolation](#spoke-account-isolation)
+7. [Credential Flow and Token Exchange](#credential-flow-and-token-exchange)
+8. [Policy Separation and Least Privilege](#policy-separation-and-least-privilege)
+9. [Encrypted State Management](#encrypted-state-management)
+10. [Distributed Locking and Concurrency Control](#distributed-locking-and-concurrency-control)
+11. [Security Controls and Threat Mitigation](#security-controls-and-threat-mitigation)
+12. [Compliance and Audit Capabilities](#compliance-and-audit-capabilities)
+13. [Security Monitoring and Incident Response](#security-monitoring-and-incident-response)
+14. [Performance Considerations](#performance-considerations)
+15. [Troubleshooting Guide](#troubleshooting-guide)
+16. [Conclusion](#conclusion)
 
 ## Introduction
-This document explains the sophisticated zero-trust security architecture that eliminates long-lived credentials through OIDC federation, implements least-privilege access control, and provides comprehensive account isolation. The system uses GitHub OIDC tokens exchanged for short-lived STS tokens at every workflow run, with hub roles containing Plan and Apply operations with environment-based restrictions, and spoke accounts having corresponding SpokePlanRole and SpokeApplyRole trusting hub roles. The architecture includes encrypted OSS buckets with versioning enabled and Tablestore instances for distributed locking ensuring concurrent access safety.
+This document explains the sophisticated zero-trust security architecture that eliminates long-lived credentials through OIDC federation, implements comprehensive least-privilege access control, and provides robust account isolation through a multi-layered role chaining mechanism. The system uses GitHub OIDC tokens exchanged for short-lived STS tokens at every workflow run, with strict security boundaries enforced through hub and spoke role assumptions. The architecture includes encrypted OSS buckets with versioning enabled and Tablestore instances for distributed locking ensuring concurrent access safety.
 
 ## Zero-Trust Architecture Overview
 The security architecture follows zero-trust principles where no component is trusted by default. Every request must be authenticated, authorized, and encrypted. The system implements multiple layers of security controls including OIDC federation, role-based access control, environment gating, and encrypted state management.
@@ -56,9 +54,9 @@ OIDC["OIDC Token Request"]
 end
 subgraph "Hub Account (Trusted Boundary)"
 OIDCProv["OIDC Provider"]
-HubPlan["GitHubActionsPlanRole"]
-HubApply["GitHubActionsApplyRole"]
-OSS["OSS State Bucket"]
+HubPlan["GitHubActionsPlanRole<br/>Pull Request Context"]
+HubApply["GitHubActionsApplyRole<br/>Production Environment"]
+OSS["OSS State Bucket<br/>KMS Encrypted"]
 OTS["Tablestore Lock"]
 end
 subgraph "Spoke Accounts (Isolated)"
@@ -82,7 +80,38 @@ HubApply --> OTS
 ```
 
 **Diagram sources**
-- [bootstrap/01-cicd-foundation/main.tf:46-101](file://bootstrap/01-cicd-foundation/main.tf#L46-L101)
+- [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
+- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
+
+## Enhanced Role Chaining Mechanism
+The system implements a secure two-hop role assumption pattern that enforces strict least-privilege principles at each hop. GitHub Actions first assumes a hub role based on context (pull request or production), which then assumes a spoke role in the target account with appropriate permissions.
+
+### Role Hierarchy and Trust Relationships
+The role hierarchy ensures clear separation of concerns and minimal blast radius:
+
+```mermaid
+flowchart TD
+GH["GitHub Actions"] --> |OIDC Token| HubPlan["GitHubActionsPlanRole"]
+GH --> |Production Env| HubApply["GitHubActionsApplyRole"]
+HubPlan --> |AssumeRole| SpokePlan["SpokePlanRole<br/>ReadOnlyAccess"]
+HubApply --> |AssumeRole| SpokeApply["SpokeApplyRole<br/>AdministratorAccess"]
+SpokePlan --> Resources["Cloud Resources<br/>Read Operations"]
+SpokeApply --> Resources2["Cloud Resources<br/>Write Operations"]
+style HubPlan fill:#e1f5fe
+style HubApply fill:#ffebee
+style SpokePlan fill:#f3e5f5
+style SpokeApply fill:#fff3e0
+```
+
+**Diagram sources**
+- [bootstrap/01-cicd-foundation/main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
+- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
+
+### Security Boundary Enforcement
+Each role assumption creates a new security boundary with its own session context, audit trail, and permission scope. The maximum session duration is set to 1 hour (3600 seconds) for all roles to limit exposure time.
+
+**Section sources**
+- [bootstrap/01-cicd-foundation/main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 ## OIDC Federation Implementation
@@ -106,11 +135,11 @@ STS-->>GHA : Short-lived STS credentials (1 hour)
 ```
 
 **Diagram sources**
-- [bootstrap/01-cicd-foundation/main.tf:46-53](file://bootstrap/01-cicd-foundation/main.tf#L46-L53)
+- [bootstrap/01-cicd-foundation/main.tf:70-77](file://bootstrap/01-cicd-foundation/main.tf#L70-L77)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-L56)
 
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:46-53](file://bootstrap/01-cicd-foundation/main.tf#L46-L53)
+- [bootstrap/01-cicd-foundation/main.tf:70-77](file://bootstrap/01-cicd-foundation/main.tf#L70-L77)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-L56)
 
 ## Hub Account Security Model
@@ -122,8 +151,8 @@ The hub roles implement strict environment-based access control using GitHub Act
 ```mermaid
 flowchart TD
 Start(["OIDC Token Received"]) --> CheckEnv["Check Environment Context"]
-CheckEnv --> |Pull Request| PR["PR Context Validation"]
-CheckEnv --> |Production Merge| PROD["Production Environment Validation"]
+CheckEnv --> |Pull Request| PR["PR Context Validation<br/>oidc:sub = repo:org/repo:pull_request"]
+CheckEnv --> |Production Merge| PROD["Production Environment Validation<br/>oidc:sub = repo:org/repo:environment:production"]
 PR --> PlanRole["Assume GitHubActionsPlanRole"]
 PROD --> ApplyRole["Assume GitHubActionsApplyRole"]
 PlanRole --> PlanPolicy["Attach ReadOnly Policy"]
@@ -133,15 +162,20 @@ ApplyPolicy --> End
 ```
 
 **Diagram sources**
-- [bootstrap/01-cicd-foundation/main.tf:59-101](file://bootstrap/01-cicd-foundation/main.tf#L59-L101)
+- [bootstrap/01-cicd-foundation/main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
 - [.github/workflows/stacks.yml:42-99](file://.github/workflows/stacks.yml#L42-L99)
 
 ### Hub Role Policies
 Both hub roles are granted minimal permissions necessary for their intended functions, including access to state infrastructure and the ability to assume spoke roles.
 
+**Updated** Enhanced policy separation with distinct permissions for plan and apply operations:
+
+- **HubChainPlan Policy**: Read-only access to OSS state bucket, Tablestore locking, and ability to assume SpokePlanRole
+- **HubChainApply Policy**: Full access to OSS state bucket (including write/delete operations), Tablestore locking, and ability to assume SpokeApplyRole
+
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:59-101](file://bootstrap/01-cicd-foundation/main.tf#L59-L101)
-- [bootstrap/01-cicd-foundation/main.tf:108-142](file://bootstrap/01-cicd-foundation/main.tf#L108-L142)
+- [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+- [bootstrap/01-cicd-foundation/main.tf:181-191](file://bootstrap/01-cicd-foundation/main.tf#L181-L191)
 
 ## Spoke Account Isolation
 Each spoke account maintains complete isolation through dedicated IAM roles that trust only the corresponding hub roles. This ensures that compromise of one account cannot affect others.
@@ -218,6 +252,44 @@ Note over Dev,GHA : Production deployment requires approval
 - [.github/workflows/stacks.yml:42-99](file://.github/workflows/stacks.yml#L42-L99)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-L56)
 
+## Policy Separation and Least Privilege
+The system implements comprehensive policy separation to enforce least-privilege principles across all operations.
+
+### Plan vs Apply Policy Distinction
+- **Plan Operations**: Limited to read-only access for state inspection and resource discovery
+- **Apply Operations**: Full administrative access for resource provisioning and modification
+
+### Permission Scoping
+Each policy is scoped to specific resources and operations:
+
+```mermaid
+flowchart LR
+subgraph "Plan Permissions"
+A[OSS GetObject]
+B[OSS ListObjects]
+C[OSS GetBucketInfo]
+D[OTS:* (Lock Only)]
+E[sts:AssumeRole SpokePlanRole]
+end
+subgraph "Apply Permissions"
+F[All Plan Permissions]
+G[OSS PutObject]
+H[OSS DeleteObject]
+I[sts:AssumeRole SpokeApplyRole]
+end
+A --> F
+B --> F
+C --> F
+D --> F
+E --> F
+```
+
+**Diagram sources**
+- [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+
+**Section sources**
+- [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+
 ## Encrypted State Management
 Terraform state is stored securely in OSS buckets with server-side encryption using KMS keys. The state backend includes versioning for audit trails and lifecycle policies for automated cleanup.
 
@@ -238,11 +310,11 @@ AccessControl --> SecureStorage
 ```
 
 **Diagram sources**
-- [bootstrap/01-cicd-foundation/main.tf:5-24](file://bootstrap/01-cicd-foundation/main.tf#L5-L24)
+- [bootstrap/01-cicd-foundation/main.tf:28-48](file://bootstrap/01-cicd-foundation/main.tf#L28-L48)
 - [bootstrap/01-cicd-foundation/backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
 
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:5-24](file://bootstrap/01-cicd-foundation/main.tf#L5-L24)
+- [bootstrap/01-cicd-foundation/main.tf:28-48](file://bootstrap/01-cicd-foundation/main.tf#L28-L48)
 - [bootstrap/01-cicd-foundation/backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
 
 ## Distributed Locking and Concurrency Control
@@ -263,28 +335,12 @@ Failed --> [*] : Retry or Fail
 ```
 
 **Diagram sources**
-- [bootstrap/01-cicd-foundation/main.tf:26-40](file://bootstrap/01-cicd-foundation/main.tf#L26-L40)
+- [bootstrap/01-cicd-foundation/main.tf:50-64](file://bootstrap/01-cicd-foundation/main.tf#L50-L64)
 - [bootstrap/01-cicd-foundation/backend.tf.example:19-21](file://bootstrap/01-cicd-foundation/backend.tf.example#L19-L21)
 
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:26-40](file://bootstrap/01-cicd-foundation/main.tf#L26-L40)
+- [bootstrap/01-cicd-foundation/main.tf:50-64](file://bootstrap/01-cicd-foundation/main.tf#L50-L64)
 - [bootstrap/01-cicd-foundation/backend.tf.example:19-21](file://bootstrap/01-cicd-foundation/backend.tf.example#L19-L21)
-
-## IAM Role Design Patterns
-The IAM design follows several key patterns including role separation, least privilege, explicit trust boundaries, and scoped permissions.
-
-### Role Separation Pattern
-Separate roles for different operations (plan vs apply) enforce operational segregation and reduce blast radius of potential compromises.
-
-### Least Privilege Enforcement
-Each role is granted only the minimum permissions necessary for its intended function, with explicit resource scoping where possible.
-
-### Trust Boundary Enforcement
-Roles explicitly define their trust relationships, ensuring that only authorized entities can assume them.
-
-**Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:59-142](file://bootstrap/01-cicd-foundation/main.tf#L59-L142)
-- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 ## Security Controls and Threat Mitigation
 The architecture implements comprehensive security controls to mitigate various attack vectors and threats.
@@ -295,6 +351,7 @@ The architecture implements comprehensive security controls to mitigate various 
 - **Privilege Escalation**: Blocked by role separation and least privilege policies
 - **State Tampering**: Protected by KMS encryption and immutable versioning
 - **Cross-Account Lateral Movement**: Prevented by explicit trust boundaries and account isolation
+- **Unauthorized Apply Operations**: Prevented by environment-based role restrictions
 
 ### Defense in Depth Layers
 1. **Network Layer**: GitHub Actions runs in isolated containers
@@ -358,8 +415,8 @@ Common issues and their resolution strategies for the security architecture.
 - **Debug Logging**: Enable detailed logging for troubleshooting
 
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:46-142](file://bootstrap/01-cicd-foundation/main.tf#L46-L142)
+- [bootstrap/01-cicd-foundation/main.tf:70-191](file://bootstrap/01-cicd-foundation/main.tf#L70-L191)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 ## Conclusion
-This sophisticated zero-trust security architecture successfully eliminates long-lived credentials through OIDC federation, implements comprehensive least-privilege access control, and provides robust account isolation. The combination of environment-based role restrictions, encrypted state management, and distributed locking creates a secure foundation for infrastructure automation. The architecture supports compliance requirements, provides extensive audit capabilities, and includes comprehensive monitoring and incident response procedures.
+This sophisticated zero-trust security architecture successfully eliminates long-lived credentials through OIDC federation, implements comprehensive least-privilege access control through enhanced role chaining, and provides robust account isolation. The combination of environment-based role restrictions, encrypted state management, and distributed locking creates a secure foundation for infrastructure automation. The architecture supports compliance requirements, provides extensive audit capabilities, and includes comprehensive monitoring and incident response procedures.

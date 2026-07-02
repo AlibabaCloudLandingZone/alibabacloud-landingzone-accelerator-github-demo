@@ -14,6 +14,13 @@
 - [variables.tf](file://bootstrap/02-spoke-bootstrap/variables.tf)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated OSS Backend Configuration section to reflect new configurable bucket naming conventions with `tfstate_bucket_name` variable
+- Enhanced Distributed Locking with Tablestore section to document the new `tfstate_lock_instance_name` variable with default 'tfstate-lock' value
+- Updated backend configuration examples to show the new variable structure
+- Improved state locking mechanism documentation with enhanced configuration options
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -38,7 +45,7 @@ The state management implementation spans two bootstrap phases:
 graph TB
 subgraph "Phase 2: CI/CD Foundation"
 A["OSS Bucket tfstate<br/>Versioning + SSE-KMS"]
-B["Tablestore Lock Table tflock"]
+B["Tablestore Lock Table tflock<br/>Instance: tfstate-lock"]
 C["OIDC Provider GitHubActions"]
 D["Hub Roles: Plan / Apply"]
 E["Outputs: bucket, endpoint, role ARNs"]
@@ -54,8 +61,8 @@ E --> |"Provide configuration"| G
 ```
 
 **Diagram sources**
-- [main.tf:5-43](file://bootstrap/01-cicd-foundation/main.tf#L5-L43)
-- [outputs.tf:1-25](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L25)
+- [main.tf:28-64](file://bootstrap/01-cicd-foundation/main.tf#L28-L64)
+- [outputs.tf:6-14](file://bootstrap/01-cicd-foundation/outputs.tf#L6-L14)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 **Section sources**
@@ -71,8 +78,8 @@ E --> |"Provide configuration"| G
 
 **Section sources**
 - [backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
-- [main.tf:5-43](file://bootstrap/01-cicd-foundation/main.tf#L5-L43)
-- [outputs.tf:1-25](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L25)
+- [main.tf:28-64](file://bootstrap/01-cicd-foundation/main.tf#L28-L64)
+- [outputs.tf:6-14](file://bootstrap/01-cicd-foundation/outputs.tf#L6-L14)
 
 ## Architecture Overview
 The state management architecture integrates CI/CD orchestration with secure state persistence and concurrency control:
@@ -106,20 +113,20 @@ OSS-->>GH : "State updated"
 
 **Diagram sources**
 - [README.md:23-26](file://README.md#L23-L26)
-- [main.tf:49-105](file://bootstrap/01-cicd-foundation/main.tf#L49-L105)
+- [main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 ## Detailed Component Analysis
 
 ### OSS Backend Configuration
 - Backend type: Alibaba Cloud OSS.
-- Bucket naming convention embeds the CICD account ID and region.
+- **Updated** Configurable bucket naming convention using the `tfstate_bucket_name` variable for explicit bucket name specification.
 - Path prefix and key define the state file location within the bucket.
 - Region selection aligns with the deployment region.
 - Distributed locking endpoint and table configured for concurrency control.
 
 Key backend parameters:
-- bucket: Name of the OSS bucket used for state storage.
+- bucket: Name of the OSS bucket used for state storage (configured via `tfstate_bucket_name` variable).
 - prefix: Path prefix under the bucket for organizing state files.
 - key: Name of the state file.
 - region: Alibaba Cloud region where the bucket resides.
@@ -127,12 +134,16 @@ Key backend parameters:
 - tablestore_table: Name of the Tablestore table used for locks.
 
 Migration steps:
-- Add the backend block to the bootstrap stack’s configuration.
+- Add the backend block to the bootstrap stack's configuration.
 - Obtain temporary STS credentials for the CICD account.
 - Run terraform init with state migration to move from local to remote backend.
 
+**Updated** The bucket naming is now fully configurable through the `tfstate_bucket_name` variable, allowing organizations to implement their own naming conventions while maintaining consistency across deployments.
+
 **Section sources**
-- [backend.tf.example:1-23](file://bootstrap/01-cicd-foundation/backend.tf.example#L1-L23)
+- [backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
+- [variables.tf:12-15](file://bootstrap/01-cicd-foundation/variables.tf#L12-L15)
+- [main.tf:24-30](file://bootstrap/01-cicd-foundation/main.tf#L24-L30)
 - [README.md:78-88](file://README.md#L78-L88)
 
 ### State Encryption and Versioning
@@ -146,10 +157,11 @@ Encryption and retention behavior:
 - Noncurrent version expiration prevents indefinite storage growth.
 
 **Section sources**
-- [main.tf:10-25](file://bootstrap/01-cicd-foundation/main.tf#L10-L25)
+- [main.tf:28-48](file://bootstrap/01-cicd-foundation/main.tf#L28-L48)
 
 ### Distributed Locking with Tablestore
 - A Tablestore instance and table are provisioned for distributed locking.
+- **Updated** The Tablestore instance name is now configurable via the `tfstate_lock_instance_name` variable with a default value of 'tfstate-lock'.
 - The OSS backend is configured to use the Tablestore endpoint and table for state locking.
 - Lock acquisition is performed automatically by Terraform during init/apply/plan operations.
 
@@ -158,8 +170,11 @@ Locking characteristics:
 - TTL set to persist the lock record indefinitely.
 - Max version constrained to a single version to simplify lock updates.
 
+**Updated** The enhanced state locking mechanism provides more flexibility in instance naming while maintaining backward compatibility through sensible defaults.
+
 **Section sources**
-- [main.tf:27-43](file://bootstrap/01-cicd-foundation/main.tf#L27-L43)
+- [main.tf:50-64](file://bootstrap/01-cicd-foundation/main.tf#L50-L64)
+- [variables.tf:17-21](file://bootstrap/01-cicd-foundation/variables.tf#L17-L21)
 - [backend.tf.example:19-21](file://bootstrap/01-cicd-foundation/backend.tf.example#L19-L21)
 
 ### Access Control and Security Model
@@ -178,8 +193,8 @@ Spoke roles:
 - Apply role grants administrative access for applying changes.
 
 **Section sources**
-- [main.tf:49-105](file://bootstrap/01-cicd-foundation/main.tf#L49-L105)
-- [main.tf:112-135](file://bootstrap/01-cicd-foundation/main.tf#L112-L135)
+- [main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
+- [main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 ### Outputs and Configuration Exposure
@@ -187,7 +202,7 @@ Spoke roles:
 - These outputs enable automation and CI/CD workflows to configure Terraform backends and OIDC authentication.
 
 **Section sources**
-- [outputs.tf:1-25](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L25)
+- [outputs.tf:6-14](file://bootstrap/01-cicd-foundation/outputs.tf#L6-L14)
 - [outputs.tf:1-22](file://bootstrap/02-spoke-bootstrap/outputs.tf#L1-L22)
 
 ## Dependency Analysis
@@ -209,14 +224,14 @@ TF --> State["Terraform State"]
 ```
 
 **Diagram sources**
-- [main.tf:49-105](file://bootstrap/01-cicd-foundation/main.tf#L49-L105)
-- [main.tf:112-135](file://bootstrap/01-cicd-foundation/main.tf#L112-L135)
-- [main.tf:5-43](file://bootstrap/01-cicd-foundation/main.tf#L5-L43)
+- [main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
+- [main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+- [main.tf:28-64](file://bootstrap/01-cicd-foundation/main.tf#L28-L64)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 **Section sources**
 - [providers.tf:1-16](file://bootstrap/01-cicd-foundation/providers.tf#L1-L16)
-- [variables.tf:1-16](file://bootstrap/01-cicd-foundation/variables.tf#L1-L16)
+- [variables.tf:1-27](file://bootstrap/01-cicd-foundation/variables.tf#L1-L27)
 - [variables.tf:1-26](file://bootstrap/02-spoke-bootstrap/variables.tf#L1-L26)
 
 ## Performance Considerations
@@ -231,20 +246,23 @@ Common state-related issues and resolutions:
 - State migration fails after adding backend block:
   - Ensure STS credentials for the CICD account are active and exported before running terraform init -migrate-state.
   - Verify the backend block matches the bucket naming convention and region.
+  - **Updated** Check that the `tfstate_bucket_name` variable is correctly configured to match your organization's naming standards.
 - Lock acquisition errors:
   - Confirm the Tablestore endpoint and table name match the backend configuration.
+  - **Updated** Verify that the `tfstate_lock_instance_name` variable is set correctly and the Tablestore instance exists.
   - Check that the hub roles have permission to access the Tablestore table.
 - Permission denied on state operations:
-  - Verify the hub roles’ policies include required OSS actions and OTS permissions.
+  - Verify the hub roles' policies include required OSS actions and OTS permissions.
   - Ensure the OIDC provider conditions match the repository and environment scopes.
 - Cross-account role assumption failures:
   - Confirm the spoke roles trust the hub roles and that the hub account ID is correctly configured.
   - Validate that the spoke account IDs and regions are accurate in the spoke bootstrap variables.
 
 **Section sources**
-- [backend.tf.example:1-23](file://bootstrap/01-cicd-foundation/backend.tf.example#L1-L23)
+- [backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
+- [variables.tf:12-21](file://bootstrap/01-cicd-foundation/variables.tf#L12-L21)
 - [README.md:78-88](file://README.md#L78-L88)
-- [main.tf:112-135](file://bootstrap/01-cicd-foundation/main.tf#L112-L135)
+- [main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 ## Conclusion
@@ -255,15 +273,18 @@ The state management infrastructure establishes secure, reliable, and auditable 
 ## Appendices
 
 ### Backend Configuration Parameters Reference
-- bucket: OSS bucket name for state storage.
+- bucket: OSS bucket name for state storage (configured via `tfstate_bucket_name` variable).
 - prefix: Path prefix within the bucket for state files.
 - key: State file name.
 - region: Alibaba Cloud region.
 - tablestore_endpoint: Tablestore endpoint for distributed locking.
 - tablestore_table: Tablestore table name for locks.
 
+**Updated** The bucket name is now explicitly configurable through the `tfstate_bucket_name` variable, providing better control over resource naming conventions.
+
 **Section sources**
 - [backend.tf.example:13-22](file://bootstrap/01-cicd-foundation/backend.tf.example#L13-L22)
+- [variables.tf:12-15](file://bootstrap/01-cicd-foundation/variables.tf#L12-L15)
 
 ### Bucket Policies and Access Control Setup
 - Hub state access policy grants:
@@ -278,8 +299,8 @@ The state management infrastructure establishes secure, reliable, and auditable 
   - Apply role: AdministratorAccess system policy.
 
 **Section sources**
-- [main.tf:112-135](file://bootstrap/01-cicd-foundation/main.tf#L112-L135)
-- [main.tf:49-105](file://bootstrap/01-cicd-foundation/main.tf#L49-L105)
+- [main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+- [main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
 - [main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 ### State Encryption Keys, Backup, and Disaster Recovery
@@ -289,13 +310,15 @@ The state management infrastructure establishes secure, reliable, and auditable 
 - Recovery: Use versioned state to restore previous states; rely on bucket replication or external backup if required.
 
 **Section sources**
-- [main.tf:10-25](file://bootstrap/01-cicd-foundation/main.tf#L10-L25)
+- [main.tf:28-48](file://bootstrap/01-cicd-foundation/main.tf#L28-L48)
 
 ### State Locking Behavior and Conflict Resolution
 - Lock acquisition occurs automatically during terraform init/plan/apply.
 - Distributed locking prevents concurrent applies across CI/CD runners.
+- **Updated** The Tablestore instance name is configurable via the `tfstate_lock_instance_name` variable with a default value of 'tfstate-lock', providing flexibility in instance naming while maintaining consistency.
 - Conflict resolution: If a lock is held by another process, wait until released or resolve contention by aborting conflicting operations.
 
 **Section sources**
-- [main.tf:27-43](file://bootstrap/01-cicd-foundation/main.tf#L27-L43)
+- [main.tf:50-64](file://bootstrap/01-cicd-foundation/main.tf#L50-L64)
+- [variables.tf:17-21](file://bootstrap/01-cicd-foundation/variables.tf#L17-L21)
 - [backend.tf.example:19-21](file://bootstrap/01-cicd-foundation/backend.tf.example#L19-L21)

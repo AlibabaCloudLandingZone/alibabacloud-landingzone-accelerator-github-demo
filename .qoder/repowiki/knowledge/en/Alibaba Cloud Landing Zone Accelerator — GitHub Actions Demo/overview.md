@@ -1,0 +1,1 @@
+End-to-end demo that bootstraps an Alibaba Cloud Landing Zone via a three-phase Terraform bootstrap and deploys production stacks through OIDC-federated GitHub Actions with no long-lived credentials.

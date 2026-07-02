@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: error_handling
+title: Terraform Validation and CI Pipeline Error Handling
+scope: []
+source_files:
+    - .github/workflows/terraform-reusable.yml
+    - bootstrap/01-cicd-foundation/main.tf
+    - modules/lza/components/account-factory/account/variables.tf
+    - modules/lza/components/guardrails/detective/variables.tf
+depends_on: []
+related_to: []

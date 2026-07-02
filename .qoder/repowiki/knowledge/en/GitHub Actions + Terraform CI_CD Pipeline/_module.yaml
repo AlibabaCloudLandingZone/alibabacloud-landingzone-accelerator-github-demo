@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: build_system
+title: GitHub Actions + Terraform CI/CD Pipeline
+scope: []
+source_files:
+    - .github/workflows/terraform-reusable.yml
+    - .github/workflows/bootstrap-00-org-structure.yml
+    - .github/workflows/bootstrap-01-cicd-foundation.yml
+    - .github/workflows/bootstrap-02-spoke.yml
+    - .github/workflows/stacks.yml
+depends_on: []
+related_to: []

@@ -3,7 +3,7 @@ schema_version: 1
 locale: en-US
 branch: main
 nodes_managed: true
-exported_at: "2026-07-01T14:12:29Z"
+exported_at: "2026-07-01T15:42:32Z"
 modules:
     "":
         dir_name: Alibaba Cloud Landing Zone Accelerator Demo
@@ -30,8 +30,7 @@ modules:
             - bootstrap/org_structure
             - bootstrap/spoke_bootstrap
         depends_on: []
-        related_to:
-            - path: infrastructure_stacks
+        related_to: []
     bootstrap/cicd_foundation:
         dir_name: CICD Foundation Bootstrap (OIDC State & Hub Roles)
         title: CICD Foundation Bootstrap (OIDC State & Hub Roles)
@@ -40,9 +39,7 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to:
-            - path: bootstrap/spoke_bootstrap
-            - path: infrastructure_stacks
+        related_to: []
     bootstrap/org_structure:
         dir_name: Resource Directory & Core Accounts Bootstrap
         title: Resource Directory & Core Accounts Bootstrap
@@ -51,8 +48,7 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to:
-            - path: bootstrap/spoke_bootstrap
+        related_to: []
     bootstrap/spoke_bootstrap:
         dir_name: Spoke Account Bootstrap — Cross-Account IAM Role Provisioning
         title: Spoke Account Bootstrap — Cross-Account IAM Role Provisioning
@@ -62,58 +58,51 @@ modules:
         children: []
         depends_on: []
         related_to:
-            - path: bootstrap/cicd_foundation
-            - path: bootstrap/org_structure
             - path: infrastructure_stacks/guardrails
-            - path: infrastructure_stacks/identity_cloudsso
             - path: infrastructure_stacks/log_archive
-            - path: infrastructure_stacks/network
-            - path: infrastructure_stacks/security
     build_system:
-        dir_name: GitHub Actions & Terraform CI_CD Pipeline
-        title: GitHub Actions & Terraform CI/CD Pipeline
+        dir_name: GitHub Actions + Terraform CI_CD Pipeline
+        title: GitHub Actions + Terraform CI/CD Pipeline
         scope: []
         source_files:
             - .github/workflows/terraform-reusable.yml
-            - .github/workflows/stacks.yml
             - .github/workflows/bootstrap-00-org-structure.yml
             - .github/workflows/bootstrap-01-cicd-foundation.yml
             - .github/workflows/bootstrap-02-spoke.yml
-            - bootstrap/01-cicd-foundation/backend.tf.example
-            - README.md
+            - .github/workflows/stacks.yml
         children: []
         depends_on: []
         related_to: []
     configuration_system:
-        dir_name: Terraform & GitHub Actions Configuration System
-        title: Terraform & GitHub Actions Configuration System
+        dir_name: Terraform-Based Configuration System with GitHub Actions CI_CD
+        title: Terraform-Based Configuration System with GitHub Actions CI/CD
         scope: []
         source_files:
-            - .github/workflows/stacks.yml
-            - .github/workflows/terraform-reusable.yml
+            - bootstrap/00-org-structure/main.tf
             - bootstrap/01-cicd-foundation/backend.tf.example
-            - bootstrap/02-spoke-bootstrap/variables.tf
-            - stacks/20-network-cen/variables.tf
-            - README.md
+            - bootstrap/02-spoke-bootstrap/main.tf
+            - stacks/10-identity-cloudsso/main.tf
+            - stacks/11-log-archive/main.tf
+            - stacks/20-network-cen/main.tf
+            - modules/lza/components/account-factory/baseline/main.tf
+            - modules/lza/components/guardrails/preventive/main.tf
+            - .github/workflows/bootstrap-00-org-structure.yml
+            - .github/workflows/bootstrap-01-cicd-foundation.yml
+            - .github/workflows/bootstrap-02-spoke.yml
         children: []
         depends_on: []
         related_to: []
     dependency_management:
-        dir_name: Terraform Provider Dependency Management with Lockfile Pinning
+        dir_name: Terraform Provider Dependency Management with Lockfile Pinning_2
         title: Terraform Provider Dependency Management with Lockfile Pinning
         scope: []
         source_files:
-            - bootstrap/00-org-structure/versions.tf
             - bootstrap/00-org-structure/.terraform.lock.hcl
-            - bootstrap/01-cicd-foundation/versions.tf
-            - bootstrap/02-spoke-bootstrap/versions.tf
-            - bootstrap/02-spoke-bootstrap/modules/spoke-roles/versions.tf
-            - stacks/11-log-archive/versions.tf
-            - stacks/11-log-archive/.terraform.lock.hcl
-            - stacks/20-network-cen/versions.tf
-            - .github/workflows/terraform-reusable.yml
-            - .github/workflows/stacks.yml
-            - .gitignore
+            - bootstrap/01-cicd-foundation/.terraform.lock.hcl
+            - bootstrap/02-spoke-bootstrap/.terraform.lock.hcl
+            - stacks/10-identity-cloudsso/.terraform.lock.hcl
+            - bootstrap/00-org-structure/versions.tf
+            - modules/lza/components/guardrails/detective/versions.tf
         children: []
         depends_on: []
         related_to: []
@@ -129,7 +118,7 @@ modules:
         depends_on: []
         related_to: []
     frontend_style:
-        dir_name: No frontend style system — IaC-only repository
+        dir_name: No frontend style system — IaC-only repository_2
         title: No frontend style system — IaC-only repository
         scope: []
         source_files: []
@@ -149,9 +138,7 @@ modules:
             - infrastructure_stacks/network
             - infrastructure_stacks/security
         depends_on: []
-        related_to:
-            - path: bootstrap
-            - path: bootstrap/cicd_foundation
+        related_to: []
     infrastructure_stacks/guardrails:
         dir_name: Guardrails Stacks — Preventive & Detective Policies
         title: Guardrails Stacks — Preventive & Detective Policies
@@ -171,8 +158,7 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to:
-            - path: bootstrap/spoke_bootstrap
+        related_to: []
     infrastructure_stacks/log_archive:
         dir_name: Log Archive Stack (SLS Audit Log Centralization)
         title: Log Archive Stack (SLS Audit Log Centralization)
@@ -192,8 +178,7 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to:
-            - path: bootstrap/spoke_bootstrap
+        related_to: []
     infrastructure_stacks/security:
         dir_name: Security Workload Stacks (Cloud Firewall, KMS, WAF)
         title: Security Workload Stacks (Cloud Firewall, KMS, WAF)
@@ -204,19 +189,19 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to:
-            - path: bootstrap/spoke_bootstrap
+        related_to: []
     logging_system:
-        dir_name: Alibaba Cloud Log Archive and Audit Infrastructure
-        title: Alibaba Cloud Log Archive and Audit Infrastructure
+        dir_name: Alibaba Cloud SLS-Based Log Archive and Audit Infrastructure
+        title: Alibaba Cloud SLS-Based Log Archive and Audit Infrastructure
         scope: []
         source_files:
             - modules/lza/components/log-archive/actiontrail/main.tf
             - modules/lza/components/log-archive/config/main.tf
-            - modules/lza/components/log-archive/log-audit/main.tf
             - modules/lza/components/log-archive/event-alert/main.tf
-            - bootstrap/02-spoke-bootstrap/main.tf
-            - .github/workflows/stacks.yml
+            - modules/lza/components/log-archive/log-audit/main.tf
+            - modules/lza/modules/sls-project/main.tf
+            - modules/lza/modules/sls-logstore/main.tf
+            - bootstrap/02-spoke-bootstrap/providers.tf
             - stacks/11-log-archive/main.tf
         children: []
         depends_on: []

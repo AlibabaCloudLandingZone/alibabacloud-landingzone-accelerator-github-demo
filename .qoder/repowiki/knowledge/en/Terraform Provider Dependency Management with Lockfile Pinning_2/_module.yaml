@@ -1,0 +1,13 @@
+schema_version: 1
+module_path: dependency_management
+title: Terraform Provider Dependency Management with Lockfile Pinning
+scope: []
+source_files:
+    - bootstrap/00-org-structure/.terraform.lock.hcl
+    - bootstrap/01-cicd-foundation/.terraform.lock.hcl
+    - bootstrap/02-spoke-bootstrap/.terraform.lock.hcl
+    - stacks/10-identity-cloudsso/.terraform.lock.hcl
+    - bootstrap/00-org-structure/versions.tf
+    - modules/lza/components/guardrails/detective/versions.tf
+depends_on: []
+related_to: []

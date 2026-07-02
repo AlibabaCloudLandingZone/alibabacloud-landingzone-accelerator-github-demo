@@ -5,6 +5,4 @@ scope:
     - bootstrap/01-cicd-foundation/
 source_files: []
 depends_on: []
-related_to:
-    - path: bootstrap/spoke_bootstrap
-    - path: infrastructure_stacks
+related_to: []

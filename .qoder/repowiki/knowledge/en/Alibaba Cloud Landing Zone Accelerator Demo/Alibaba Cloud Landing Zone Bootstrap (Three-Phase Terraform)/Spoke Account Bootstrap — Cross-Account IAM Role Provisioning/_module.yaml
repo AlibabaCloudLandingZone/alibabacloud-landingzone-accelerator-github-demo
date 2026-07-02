@@ -6,10 +6,5 @@ scope:
 source_files: []
 depends_on: []
 related_to:
-    - path: bootstrap/cicd_foundation
-    - path: bootstrap/org_structure
     - path: infrastructure_stacks/guardrails
-    - path: infrastructure_stacks/identity_cloudsso
     - path: infrastructure_stacks/log_archive
-    - path: infrastructure_stacks/network
-    - path: infrastructure_stacks/security
