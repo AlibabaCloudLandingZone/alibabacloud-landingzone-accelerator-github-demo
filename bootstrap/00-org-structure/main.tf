@@ -1,49 +1,24 @@
-# 1. Enable Resource Directory on the current (management) account.
-#    Idempotent — a no-op if RD is already enabled.
-#    NOTE: `terraform destroy` will NOT disable RD; treat this resource
-#    as a one-way switch.
-resource "alicloud_resource_manager_resource_directory" "this" {}
+# 1. Resource Directory + Folder Hierarchy
+#    Creates the Resource Directory (if not already enabled) and the folder
+#    structure defined in var.folder_structure.
+module "folders" {
+  source = "../../modules/lza/components/resource-structure/folders"
 
-data "alicloud_resource_manager_resource_directories" "this" {
-  depends_on = [alicloud_resource_manager_resource_directory.this]
+  use_existing_resource_directory = false
+  folder_structure                = var.folder_structure
 }
 
-locals {
-  root_folder_id = data.alicloud_resource_manager_resource_directories.this.directories[0].root_folder_id
-}
+# 2. Core Member Accounts
+#    Creates member accounts in the "Core" folder as defined in var.account_mapping.
+#    Each account gets a ResourceDirectoryAccountAccessRole that allows the
+#    management account to assume into it for subsequent bootstrap phases.
+module "accounts" {
+  source = "../../modules/lza/components/resource-structure/accounts"
 
-# 2. Folder hierarchy
-resource "alicloud_resource_manager_folder" "core" {
-  folder_name      = "Core"
-  parent_folder_id = local.root_folder_id
-}
-
-resource "alicloud_resource_manager_folder" "workloads" {
-  folder_name      = "Workloads"
-  parent_folder_id = local.root_folder_id
-}
-
-resource "alicloud_resource_manager_folder" "sandbox" {
-  folder_name      = "Sandbox"
-  parent_folder_id = local.root_folder_id
-}
-
-# 3. Core member accounts
-locals {
-  core_accounts = {
-    devops          = { display_name = "devops", folder_id = alicloud_resource_manager_folder.core.id, billing_type = "Trusteeship" }
-    log-archive     = { display_name = "log-archive", folder_id = alicloud_resource_manager_folder.core.id, billing_type = "Trusteeship" }
-    security        = { display_name = "security", folder_id = alicloud_resource_manager_folder.core.id, billing_type = "Trusteeship" }
-    network         = { display_name = "network", folder_id = alicloud_resource_manager_folder.core.id, billing_type = "Trusteeship" }
-    shared-services = { display_name = "shared-services", folder_id = alicloud_resource_manager_folder.core.id, billing_type = "Trusteeship" }
+  resource_directory_id = module.folders.resource_directory_id
+  default_folder_id     = [for f in module.folders.folder_structure : f.id if f.folder_name == "Core"][0]
+  account_mapping       = var.account_mapping
+  delegated_services = {
+    "cloudsso.aliyuncs.com" = ["iam"]
   }
-}
-
-resource "alicloud_resource_manager_account" "core" {
-  for_each = local.core_accounts
-
-  display_name        = each.value.display_name
-  folder_id           = each.value.folder_id
-  account_name_prefix = each.value.display_name
-  payer_account_id    = each.value.billing_type == "Trusteeship" ? data.alicloud_resource_manager_resource_directories.this.directories[0].master_account_id : null
 }
