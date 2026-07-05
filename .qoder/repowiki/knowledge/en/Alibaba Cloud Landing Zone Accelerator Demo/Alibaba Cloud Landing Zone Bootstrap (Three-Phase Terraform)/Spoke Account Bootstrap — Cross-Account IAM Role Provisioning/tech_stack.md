@@ -1,1 +1,0 @@
-Terraform with `alicloud` provider; relies on Alibaba Cloud Resource Directory for cross-account role assumption and RAM for identity federation between hub GitHub Actions OIDC roles and spoke execution roles.

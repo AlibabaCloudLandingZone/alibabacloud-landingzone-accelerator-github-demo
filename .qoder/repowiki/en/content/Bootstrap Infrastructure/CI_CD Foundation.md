@@ -19,11 +19,12 @@
 
 ## Update Summary
 **Changes Made**
-- Added enhanced security controls with pre-flight account validation checks
-- Updated hub role policies to use separate HubChainPlan and HubChainApply policies for improved least-privilege access
+- Added comprehensive pre-flight validation checks for account ID existence and OSS service activation
+- Separated hub role policies into distinct HubChainPlan (read-only) and HubChainApply (read-write) roles implementing proper least-privilege principles
+- Enhanced OIDC conditions with stricter security controls for role assumption
 - Added configurable state bucket naming via tfstate_bucket_name variable
 - Added new tfstate_lock_instance_name variable for Tablestore instance configuration
-- Added new current_account_id output for validation and debugging
+- Added current_account_id output for validation and debugging
 - Enhanced OSS service activation validation using alicloud_oss_service data source
 
 ## Table of Contents
@@ -40,17 +41,18 @@
 
 ## Introduction
 This document explains the CI/CD foundation bootstrap phase that establishes secure credential management and state infrastructure for Alibaba Cloud Landing Zone deployments using GitHub Actions and OIDC. It covers:
-- OIDC provider configuration for GitHub Actions integration
-- Hub role creation for Plan and Apply operations with enhanced least-privilege policies
-- State infrastructure setup with OSS backend and Tablestore distributed locking
+- Enhanced pre-flight validation checks for account context and service availability
+- OIDC provider configuration for GitHub Actions integration with strengthened security controls
+- Hub role creation with separate Plan and Apply operations implementing proper least-privilege policies
+- State infrastructure setup with configurable OSS backend and Tablestore distributed locking
 - Provider configuration for multi-account operations
-- Security implications of enhanced security controls and pre-flight validation
+- Security implications of enhanced security controls and comprehensive validation
 - Backend configuration examples, variable definitions, and troubleshooting guidance
 - State migration procedures and backend initialization steps
 
 ## Project Structure
-The CI/CD foundation is implemented in a dedicated bootstrap module and orchestrated by GitHub Actions reusable workflows. The structure emphasizes separation of concerns with enhanced security controls:
-- bootstrap/01-cicd-foundation: Creates OIDC provider, hub roles with separate plan/apply policies, OSS state bucket, and Tablestore lock table with pre-flight validation
+The CI/CD foundation is implemented in a dedicated bootstrap module and orchestrated by GitHub Actions reusable workflows. The structure emphasizes separation of concerns with enhanced security controls and pre-flight validation:
+- bootstrap/01-cicd-foundation: Creates OIDC provider, hub roles with separate plan/apply policies, OSS state bucket, and Tablestore lock table with comprehensive pre-flight validation
 - bootstrap/02-spoke-bootstrap/modules/spoke-roles: Defines spoke roles in member accounts that trust hub roles
 - .github/workflows: Reusable workflow that performs Terraform plan/apply using OIDC-assumed roles
 
@@ -58,7 +60,7 @@ The CI/CD foundation is implemented in a dedicated bootstrap module and orchestr
 graph TB
 GH["GitHub Actions"] --> WF["Reusable Workflow<br/>terraform-reusable.yml"]
 WF --> HUB["Hub (CICD) Account"]
-HUB --> PRECHECK["Pre-flight Validation<br/>Account ID Check"]
+HUB --> PRECHECK["Pre-flight Validation<br/>Account ID & OSS Service Check"]
 HUB --> OIDC["OIDC Provider<br/>GitHubActions"]
 HUB --> PLAN["Hub Plan Role<br/>GitHubActionsPlanRole"]
 HUB --> APPLY["Hub Apply Role<br/>GitHubActionsApplyRole"]
@@ -73,9 +75,9 @@ SPOKE --> SAPPLY["Spoke Apply Role<br/>SpokeApplyRole"]
 
 **Diagram sources**
 - [.github/workflows/terraform-reusable.yml:1-118](file://.github/workflows/terraform-reusable.yml#L1-L118)
-- [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
-- [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
-- [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
+- [bootstrap/01-cicd-foundation/main.tf:7-18](file://bootstrap/01-cicd-foundation/main.tf#L7-L18)
+- [bootstrap/01-cicd-foundation/main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
+- [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-L191)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 **Section sources**
@@ -88,34 +90,34 @@ SPOKE --> SAPPLY["Spoke Apply Role<br/>SpokeApplyRole"]
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:1-42](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L1-L42)
 
 ## Core Components
-- **Pre-flight Validation**: Enhanced security controls with account ID verification and OSS service activation checks
-- **OIDC Provider**: Establishes trust between GitHub Actions and Alibaba Cloud, enabling short-lived STS tokens without long-lived credentials
-- **Hub Roles**: Separate roles for plan (read-only) and apply (read-write) operations with distinct least-privilege policies
-- **State Infrastructure**: Configurable OSS bucket for encrypted state storage and Tablestore table for distributed locking
+- **Enhanced Pre-flight Validation**: Comprehensive security controls with account ID verification and OSS service activation checks before resource creation
+- **OIDC Provider**: Establishes trust between GitHub Actions and Alibaba Cloud with strengthened security conditions, enabling short-lived STS tokens without long-lived credentials
+- **Separate Hub Roles**: Distinct roles for plan (read-only) and apply (read-write) operations with separate least-privilege policies (HubChainPlan vs HubChainApply)
+- **Configurable State Infrastructure**: Flexible OSS bucket naming and Tablestore instance configuration for better organization and management
 - **Provider Configuration**: Multi-account chaining from management account to CICD account using ResourceDirectoryAccountAccessRole
-- **Outputs**: Exposes ARNs, identifiers, and current account information needed by GitHub Actions workflows
+- **Enhanced Outputs**: Exposes ARNs, identifiers, and current account information needed by GitHub Actions workflows
 
 Key implementation references:
 - Pre-flight validation and OSS service check: [bootstrap/01-cicd-foundation/main.tf:7-18](file://bootstrap/01-cicd-foundation/main.tf#L7-L18)
-- OIDC provider and hub roles: [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
-- Separate hub policies: [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
-- State bucket and lock table: [bootstrap/01-cicd-foundation/main.tf:28-64](file://bootstrap/01-cicd-foundation/main.tf#L28-L64)
+- OIDC provider and hub roles with strengthened conditions: [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
+- Separate hub policies (HubChainPlan vs HubChainApply): [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-L191)
+- Configurable state infrastructure: [bootstrap/01-cicd-foundation/main.tf:24-64](file://bootstrap/01-cicd-foundation/main.tf#L24-L64)
 - Provider chaining: [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-L21)
-- Outputs including current account: [bootstrap/01-cicd-foundation/outputs.tf:1-30](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L30)
+- Enhanced outputs including current account: [bootstrap/01-cicd-foundation/outputs.tf:1-30](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L30)
 
 **Section sources**
 - [bootstrap/01-cicd-foundation/main.tf:7-18](file://bootstrap/01-cicd-foundation/main.tf#L7-L18)
 - [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
-- [bootstrap/01-cicd-foundation/main.tf:133-179](file://bootstrap/01-cicd-foundation/main.tf#L133-L179)
-- [bootstrap/01-cicd-foundation/main.tf:28-64](file://bootstrap/01-cicd-foundation/main.tf#L28-L64)
+- [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-L191)
+- [bootstrap/01-cicd-foundation/main.tf:24-64](file://bootstrap/01-cicd-foundation/main.tf#L24-L64)
 - [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-L21)
 - [bootstrap/01-cicd-foundation/outputs.tf:1-30](file://bootstrap/01-cicd-foundation/outputs.tf#L1-L30)
 
 ## Architecture Overview
-The CI/CD foundation enforces a strict security model with enhanced pre-flight validation:
-- **Pre-flight Security Checks**: Validates account context and service availability before resource creation
-- No long-lived credentials: GitHub OIDC tokens are exchanged for short-lived STS tokens at runtime
-- **Least-privilege with separate policies**: Plan role uses HubChainPlan policy (read-only); Apply role uses HubChainApply policy (read-write)
+The CI/CD foundation enforces a strict security model with enhanced pre-flight validation and separated least-privilege policies:
+- **Comprehensive Pre-flight Security Checks**: Validates account context and service availability before any resource creation
+- No long-lived credentials: GitHub OIDC tokens are exchanged for short-lived STS tokens at runtime with strengthened conditions
+- **Separated least-privilege policies**: Plan role uses HubChainPlan policy (read-only); Apply role uses HubChainApply policy (read-write)
 - Account isolation: Each spoke account has its own roles; compromising one does not affect others
 - Encrypted state: OSS bucket uses KMS server-side encryption with configurable naming
 - Distributed locking: Tablestore prevents concurrent applies with configurable instance naming
@@ -148,24 +150,24 @@ WF-->>GH : "Report results"
 **Diagram sources**
 - [.github/workflows/bootstrap-01-cicd-foundation.yml:18-36](file://.github/workflows/bootstrap-01-cicd-foundation.yml#L18-L36)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-L56)
-- [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
+- [bootstrap/01-cicd-foundation/main.tf:7-18](file://bootstrap/01-cicd-foundation/main.tf#L7-L18)
 - [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 **Section sources**
 - [README.md:106-113](file://README.md#L106-L113)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-L56)
-- [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
+- [bootstrap/01-cicd-foundation/main.tf:7-18](file://bootstrap/01-cicd-foundation/main.tf#L7-L18)
 - [bootstrap/01-cicd-foundation/main.tf:70-125](file://bootstrap/01-cicd-foundation/main.tf#L70-L125)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 ## Detailed Component Analysis
 
-### Enhanced Security Controls and Pre-flight Validation
-The CI/CD foundation now includes comprehensive pre-flight validation checks:
-- **Account ID Validation**: Ensures Terraform runs in the correct CICD account context
-- **OSS Service Activation Check**: Verifies OSS service is enabled before creating buckets
-- **Service Dependency Management**: Uses depends_on to ensure proper resource ordering
+### Enhanced Security Controls and Comprehensive Pre-flight Validation
+The CI/CD foundation now includes comprehensive pre-flight validation checks that provide critical safety guarantees:
+- **Account ID Validation**: Ensures Terraform runs in the correct CICD account context using lifecycle precondition
+- **OSS Service Activation Check**: Verifies OSS service is enabled before creating buckets using alicloud_oss_service data source
+- **Service Dependency Management**: Uses depends_on to ensure proper resource ordering and service availability
 
 Implementation highlights:
 - Account validation with lifecycle precondition: [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
@@ -175,10 +177,10 @@ Implementation highlights:
 ```mermaid
 flowchart TD
 Start(["Initialize Pre-flight Checks"]) --> AccountCheck["Validate Current Account ID<br/>vs Expected CICD Account"]
-AccountCheck --> OSSCheck["Check OSS Service Activation"]
+AccountCheck --> OSSCheck["Check OSS Service Activation<br/>Using alicloud_oss_service Data Source"]
 OSSCheck --> Success{"All Checks Passed?"}
 Success --> |Yes| Proceed["Proceed with Resource Creation"]
-Success --> |No| Fail["Fail with Descriptive Error Message"]
+Success --> |No| Fail["Fail with Descriptive Error Message<br/>Including Account Context Details"]
 ```
 
 **Diagram sources**
@@ -189,26 +191,26 @@ Success --> |No| Fail["Fail with Descriptive Error Message"]
 - [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
 - [bootstrap/01-cicd-foundation/main.tf:16-18](file://bootstrap/01-cicd-foundation/main.tf#L16-L18)
 
-### OIDC Provider Configuration
-The OIDC provider enables GitHub Actions to assume hub roles securely:
+### Strengthened OIDC Provider Configuration
+The OIDC provider enables GitHub Actions to assume hub roles securely with enhanced security controls:
 - Provider name and issuer URL are configured for GitHub Actions
-- Audience and issuer conditions restrict token usage
+- Audience and issuer conditions restrict token usage with stricter validation
 - Client IDs define trusted audiences
-- Conditions scope role assumption to specific GitHub contexts (PR vs production environment)
+- Conditions scope role assumption to specific GitHub contexts (PR vs production environment) with enhanced security
 
 Implementation highlights:
 - OIDC provider resource: [bootstrap/01-cicd-foundation/main.tf:70-77](file://bootstrap/01-cicd-foundation/main.tf#L70-L77)
-- Hub plan role with OIDC conditions: [bootstrap/01-cicd-foundation/main.tf:83-103](file://bootstrap/01-cicd-foundation/main.tf#L83-L103)
-- Hub apply role with OIDC conditions: [bootstrap/01-cicd-foundation/main.tf:105-125](file://bootstrap/01-cicd-foundation/main.tf#L105-L125)
+- Hub plan role with strengthened OIDC conditions: [bootstrap/01-cicd-foundation/main.tf:83-103](file://bootstrap/01-cicd-foundation/main.tf#L83-L103)
+- Hub apply role with strengthened OIDC conditions: [bootstrap/01-cicd-foundation/main.tf:105-125](file://bootstrap/01-cicd-foundation/main.tf#L105-L125)
 
 ```mermaid
 flowchart TD
-Start(["Configure OIDC Provider"]) --> Issuer["Set issuer URL<br/>token.actions.githubusercontent.com"]
+Start(["Configure Strengthened OIDC Provider"]) --> Issuer["Set issuer URL<br/>token.actions.githubusercontent.com"]
 Issuer --> Audience["Set aud condition<br/>sts.aliyuncs.com"]
 Audience --> Repo["Set sub condition<br/>repo:<org>/<repo>:pull_request"]
 Repo --> Prod["Set sub condition<br/>repo:<org>/<repo>:environment:production"]
-Prod --> Roles["Hub Plan/Apply Roles"]
-Roles --> End(["Ready for OIDC-assumed usage"])
+Prod --> Roles["Hub Plan/Apply Roles<br/>With Stricter Security Controls"]
+Roles --> End(["Ready for Secure OIDC-assumed Usage"])
 ```
 
 **Diagram sources**
@@ -219,15 +221,16 @@ Roles --> End(["Ready for OIDC-assumed usage"])
 - [bootstrap/01-cicd-foundation/main.tf:70-77](file://bootstrap/01-cicd-foundation/main.tf#L70-L77)
 - [bootstrap/01-cicd-foundation/main.tf:83-125](file://bootstrap/01-cicd-foundation/main.tf#L83-L125)
 
-### Improved Hub Role Policies with Least-Privilege Access
-Two separate hub policies provide enhanced least-privilege access control:
-- **HubChainPlan Policy**: Read-only access for PR plans with limited OSS permissions
-- **HubChainApply Policy**: Full read-write access for production apply with complete OSS permissions
+### Improved Hub Role Policies with Proper Least-Privilege Access
+Two separate hub policies provide enhanced least-privilege access control with clear separation of concerns:
+- **HubChainPlan Policy**: Read-only access for PR plans with limited OSS permissions (GetObject, ListObjects, GetBucketInfo only)
+- **HubChainApply Policy**: Full read-write access for production apply with complete OSS permissions (adds PutObject, DeleteObject capabilities)
 
-Policy differences:
-- Plan policy: `oss:GetObject`, `oss:ListObjects`, `oss:GetBucketInfo` only
-- Apply policy: Adds `oss:PutObject`, `oss:DeleteObject` capabilities
+Policy differences and security benefits:
+- Plan policy: Restricted to read operations only, preventing accidental modifications during planning
+- Apply policy: Includes write operations but restricted to production environment with required reviewers
 - Both policies allow `ots:*` for distributed locking and `sts:AssumeRole` on appropriate spoke roles
+- Clear audit trail for distinguishing between planning and applying activities
 
 Implementation highlights:
 - HubChainPlan policy definition: [bootstrap/01-cicd-foundation/main.tf:133-155](file://bootstrap/01-cicd-foundation/main.tf#L133-L155)
@@ -268,8 +271,8 @@ HubApplyRole --> HubChainApplyPolicy : "attached"
 
 ### Configurable State Infrastructure Setup
 The state infrastructure now supports configurable naming for better organization and management:
-- **Configurable OSS Bucket**: Named via `tfstate_bucket_name` variable for flexible naming conventions
-- **Configurable Tablestore Instance**: Named via `tfstate_lock_instance_name` variable with default value
+- **Configurable OSS Bucket**: Named via `tfstate_bucket_name` variable for flexible naming conventions and better resource organization
+- **Configurable Tablestore Instance**: Named via `tfstate_lock_instance_name` variable with default value for consistent naming patterns
 - Enhanced versioning and lifecycle management remains unchanged
 
 Implementation highlights:
@@ -279,7 +282,7 @@ Implementation highlights:
 
 ```mermaid
 flowchart TD
-Start(["Initialize Configurable State Infrastructure"]) --> BucketName["Use tfstate_bucket_name variable<br/>for OSS bucket naming"]
+Start(["Initialize Configurable State Infrastructure"]) --> BucketName["Use tfstate_bucket_name variable<br/>for flexible OSS bucket naming"]
 BucketName --> Lifecycle["Add lifecycle rule<br/>expire old versions"]
 Lifecycle --> OTSInstance["Create Tablestore Instance<br/>Using tfstate_lock_instance_name"]
 OTSInstance --> OTSTable["Create Tablestore Table<br/>primary key: LockID"]
@@ -295,7 +298,7 @@ OTSTable --> Ready(["Configurable State Infrastructure Ready"])
 - [bootstrap/01-cicd-foundation/variables.tf:12-21](file://bootstrap/01-cicd-foundation/variables.tf#L12-21)
 
 ### Provider Configuration for Multi-Account Operations
-Multi-account operations are achieved by chaining providers:
+Multi-account operations are achieved by chaining providers with enhanced security:
 - Management account provider (operator credentials)
 - CICD account provider chained via ResourceDirectoryAccountAccessRole
 
@@ -325,26 +328,27 @@ CICD-->>Creds : "STS credentials"
 - [bootstrap/01-cicd-foundation/providers.tf:8-21](file://bootstrap/01-cicd-foundation/providers.tf#L8-21)
 - [bootstrap/01-cicd-foundation/variables.tf:7-10](file://bootstrap/01-cicd-foundation/variables.tf#L7-10)
 
-### Enhanced Security Implications of Least-Privilege Roles
-The enhanced security model provides stronger isolation:
-- **Pre-flight validation**: Prevents accidental execution in wrong account context
-- **Separate policies**: HubChainPlan vs HubChainApply provide clear separation of concerns
+### Enhanced Security Implications of Separated Least-Privilege Roles
+The enhanced security model provides stronger isolation through separated policies and comprehensive validation:
+- **Pre-flight validation**: Prevents accidental execution in wrong account context with descriptive error messages
+- **Separated policies**: HubChainPlan vs HubChainApply provide clear separation of concerns and audit trails
 - Plan role is read-only and scoped to pull_request context with limited OSS permissions
 - Apply role is read-write and restricted to production environment with full OSS permissions
 - Spoke roles enforce account isolation and minimal permissions
 - Encrypted state and distributed locking protect against unauthorized changes
+- **Strengthened OIDC conditions**: More restrictive token validation and audience checking
 
 Implementation references:
 - Pre-flight validation: [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-14)
-- Separate hub policies: [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-191)
+- Separate hub policies: [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-L191)
 - Spoke roles (plan/apply): [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
-- Security model summary: [README.md:106-113](file://README.md#L106-113)
+- Security model summary: [README.md:106-113](file://README.md#L106-L113)
 
 **Section sources**
 - [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-14)
-- [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-191)
+- [bootstrap/01-cicd-foundation/main.tf:133-191](file://bootstrap/01-cicd-foundation/main.tf#L133-L191)
 - [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
-- [README.md:106-113](file://README.md#L106-113)
+- [README.md:106-113](file://README.md#L106-L113)
 
 ### Backend Configuration and State Migration
 - backend.tf.example demonstrates OSS backend configuration with Tablestore endpoint and table
@@ -376,7 +380,7 @@ Migrate --> OSS["OSS Backend Active"]
 
 ## Dependency Analysis
 The CI/CD foundation depends on:
-- bootstrap/01-cicd-foundation: Provides OIDC provider, hub roles with separate policies, and state infrastructure with pre-flight validation
+- bootstrap/01-cicd-foundation: Provides OIDC provider, hub roles with separate policies, and configurable state infrastructure with comprehensive pre-flight validation
 - bootstrap/02-spoke-bootstrap/modules/spoke-roles: Provides spoke roles that trust hub roles
 - .github/workflows/terraform-reusable.yml: Orchestrates OIDC-based credential configuration and Terraform operations
 - bootstrap/00-org-structure/outputs.tf: Supplies account IDs for provider configuration
@@ -394,7 +398,7 @@ WF --> GH["bootstrap-01-cicd-foundation.yml"]
 - [bootstrap/00-org-structure/outputs.tf:15-19](file://bootstrap/00-org-structure/outputs.tf#L15-19)
 - [bootstrap/01-cicd-foundation/providers.tf:8-21](file://bootstrap/01-cicd-foundation/providers.tf#L8-21)
 - [bootstrap/01-cicd-foundation/main.tf:70-191](file://bootstrap/01-cicd-foundation/main.tf#L70-191)
-- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
+- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-56)
 - [.github/workflows/bootstrap-01-cicd-foundation.yml:18-36](file://.github/workflows/bootstrap-01-cicd-foundation.yml#L18-36)
 
@@ -402,13 +406,13 @@ WF --> GH["bootstrap-01-cicd-foundation.yml"]
 - [bootstrap/00-org-structure/outputs.tf:15-19](file://bootstrap/00-org-structure/outputs.tf#L15-19)
 - [bootstrap/01-cicd-foundation/providers.tf:8-21](file://bootstrap/01-cicd-foundation/providers.tf#L8-21)
 - [bootstrap/01-cicd-foundation/main.tf:70-191](file://bootstrap/01-cicd-foundation/main.tf#L70-191)
-- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
+- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 - [.github/workflows/terraform-reusable.yml:50-56](file://.github/workflows/terraform-reusable.yml#L50-56)
 - [.github/workflows/bootstrap-01-cicd-foundation.yml:18-36](file://.github/workflows/bootstrap-01-cicd-foundation.yml#L18-36)
 
 ## Performance Considerations
 - OIDC token exchange is fast and avoids long-lived credentials
-- **Pre-flight validation adds minimal overhead** while providing critical safety checks
+- **Pre-flight validation adds minimal overhead while providing critical safety checks**
 - OSS state backend provides efficient state retrieval and updates
 - Tablestore distributed locking minimizes contention under moderate concurrency
 - Using capacity Tablestore instance reduces cost while maintaining reliability
@@ -417,23 +421,24 @@ WF --> GH["bootstrap-01-cicd-foundation.yml"]
 [No sources needed since this section provides general guidance]
 
 ## Troubleshooting Guide
-Common issues and resolutions during CI/CD foundation bootstrap:
+Common issues and resolutions during CI/CD foundation bootstrap with enhanced security controls:
 
 - **Pre-flight validation failures**
   - Verify current account matches expected CICD account ID
   - Ensure you have assumed role into the correct account before running Terraform
   - Check error message for specific account mismatch details
-  - Reference: [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-14)
+  - Reference: [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
 
 - **OSS service activation errors**
   - Ensure OSS service is enabled in the target account
   - Check that the alicloud_oss_service data source returns successfully
-  - Reference: [bootstrap/01-cicd-foundation/main.tf:16-18](file://bootstrap/01-cicd-foundation/main.tf#L16-18)
+  - Reference: [bootstrap/01-cicd-foundation/main.tf:16-18](file://bootstrap/01-cicd-foundation/main.tf#L16-L18)
 
 - **OIDC token exchange failures**
   - Verify OIDC provider ARN and hub role ARNs are set in repository variables
   - Confirm GitHub Actions permissions include id-token: write
   - Ensure conditions match GitHub context (pull_request vs environment:production)
+  - Check strengthened OIDC conditions are properly configured
   - Reference: [README.md:96-105](file://README.md#L96-105), [.github/workflows/terraform-reusable.yml:33-36](file://.github/workflows/terraform-reusable.yml#L33-36)
 
 - **State migration errors**
@@ -444,13 +449,13 @@ Common issues and resolutions during CI/CD foundation bootstrap:
 - **Provider configuration issues**
   - Confirm management account credentials and ResourceDirectoryAccountAccessRole availability
   - Verify cicd_account_id variable matches the CICD account ID
-  - Reference: [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-21), [bootstrap/01-cicd-foundation/variables.tf:7-10](file://bootstrap/01-cicd-foundation/variables.tf#L7-10)
+  - Reference: [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-L21), [bootstrap/01-cicd-foundation/variables.tf:7-10](file://bootstrap/01-cicd-foundation/variables.tf#L7-10)
 
 - **Role assumption failures**
-  - Check hub role trust policies and OIDC conditions
+  - Check hub role trust policies and strengthened OIDC conditions
   - Validate spoke roles trust hub roles and have appropriate policies attached
   - Verify correct policy attachment (HubChainPlan vs HubChainApply)
-  - Reference: [bootstrap/01-cicd-foundation/main.tf:83-191](file://bootstrap/01-cicd-foundation/main.tf#L83-191), [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
+  - Reference: [bootstrap/01-cicd-foundation/main.tf:83-191](file://bootstrap/01-cicd-foundation/main.tf#L83-L191), [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 
 - **Configurable naming issues**
   - Verify tfstate_bucket_name variable is properly set
@@ -458,24 +463,25 @@ Common issues and resolutions during CI/CD foundation bootstrap:
   - Reference: [bootstrap/01-cicd-foundation/variables.tf:12-21](file://bootstrap/01-cicd-foundation/variables.tf#L12-21)
 
 **Section sources**
-- [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-14)
-- [bootstrap/01-cicd-foundation/main.tf:16-18](file://bootstrap/01-cicd-foundation/main.tf#L16-18)
+- [bootstrap/01-cicd-foundation/main.tf:7-14](file://bootstrap/01-cicd-foundation/main.tf#L7-L14)
+- [bootstrap/01-cicd-foundation/main.tf:16-18](file://bootstrap/01-cicd-foundation/main.tf#L16-L18)
 - [README.md:96-105](file://README.md#L96-105)
 - [.github/workflows/terraform-reusable.yml:33-36](file://.github/workflows/terraform-reusable.yml#L33-36)
 - [bootstrap/01-cicd-foundation/backend.tf.example:4-11](file://bootstrap/01-cicd-foundation/backend.tf.example#L4-11)
-- [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-21)
+- [bootstrap/01-cicd-foundation/providers.tf:14-21](file://bootstrap/01-cicd-foundation/providers.tf#L14-L21)
 - [bootstrap/01-cicd-foundation/variables.tf:7-10](file://bootstrap/01-cicd-foundation/variables.tf#L7-10)
-- [bootstrap/01-cicd-foundation/main.tf:83-191](file://bootstrap/01-cicd-foundation/main.tf#L83-191)
-- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-41)
+- [bootstrap/01-cicd-foundation/main.tf:83-191](file://bootstrap/01-cicd-foundation/main.tf#L83-L191)
+- [bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf:3-41](file://bootstrap/02-spoke-bootstrap/modules/spoke-roles/main.tf#L3-L41)
 - [bootstrap/01-cicd-foundation/variables.tf:12-21](file://bootstrap/01-cicd-foundation/variables.tf#L12-21)
 
 ## Conclusion
-The CI/CD foundation bootstrap establishes a secure, least-privilege pipeline for managing Alibaba Cloud resources with GitHub Actions, enhanced with robust security controls:
-- **Pre-flight validation** ensures correct account context and service availability
-- OIDC provider and hub roles enable short-lived, context-aware credentials with separate least-privilege policies
-- **Configurable state infrastructure** provides flexible naming for better organization
+The CI/CD foundation bootstrap establishes a secure, least-privilege pipeline for managing Alibaba Cloud resources with GitHub Actions, enhanced with robust security controls and comprehensive validation:
+- **Comprehensive pre-flight validation** ensures correct account context and service availability before any resource creation
+- OIDC provider and hub roles enable short-lived, context-aware credentials with separate least-privilege policies (HubChainPlan vs HubChainApply)
+- **Configurable state infrastructure** provides flexible naming for better organization and management
 - OSS state bucket with KMS encryption and Tablestore distributed locking ensures safe state management
 - Multi-account provider chaining and spoke roles enforce isolation and minimal permissions
+- **Strengthened OIDC conditions** provide enhanced security controls for role assumption
 - Clear migration and troubleshooting guidance supports reliable operations
 
 [No sources needed since this section summarizes without analyzing specific files]
@@ -509,10 +515,11 @@ Reference: [bootstrap/01-cicd-foundation/backend.tf.example:13-22](file://bootst
 Reference: [bootstrap/01-cicd-foundation/outputs.tf:1-30](file://bootstrap/01-cicd-foundation/outputs.tf#L1-30)
 
 ### Security Enhancement Summary
-- **Pre-flight validation**: Prevents execution in wrong account context
-- **Separate hub policies**: HubChainPlan (read-only) vs HubChainApply (read-write)
-- **Enhanced OSS service validation**: Ensures service availability before resource creation
-- **Configurable naming**: Better resource organization and management
+- **Comprehensive pre-flight validation**: Prevents execution in wrong account context with descriptive error messages
+- **Separated hub policies**: HubChainPlan (read-only) vs HubChainApply (read-write) with clear audit trails
+- **Enhanced OSS service validation**: Ensures service availability before resource creation using data sources
+- **Configurable naming**: Better resource organization and management through flexible variables
+- **Strengthened OIDC conditions**: More restrictive token validation and audience checking
 - **Improved error messages**: More descriptive failure reasons for easier troubleshooting
 
 [No sources needed since this section summarizes security enhancements]

@@ -17,6 +17,10 @@ data "alicloud_oss_service" "open" {
   enable = "On"
 }
 
+data "alicloud_ots_service" "open" {
+  enable = "On"
+}
+
 # =============================================================================
 # 1. State infrastructure inside the CICD account
 # =============================================================================
@@ -48,6 +52,7 @@ resource "alicloud_oss_bucket" "tfstate" {
 }
 
 resource "alicloud_ots_instance" "tflock" {
+  depends_on    = [data.alicloud_ots_service.open]
   name          = var.tfstate_lock_instance_name
   instance_type = "Capacity"
 }

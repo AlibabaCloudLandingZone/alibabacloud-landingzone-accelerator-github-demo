@@ -1,1 +1,0 @@
-Terraform stacks that provision the Alibaba Cloud network backbone — a CEN hub instance in the spoke account and a placeholder DMZ VPC stack — as part of the Landing Zone Accelerator GitHub demo.

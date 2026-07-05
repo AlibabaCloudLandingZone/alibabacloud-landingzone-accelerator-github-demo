@@ -1,1 +1,0 @@
-Bootstraps Alibaba Cloud state infrastructure and GitHub Actions OIDC-based hub roles in the CICD member account for secure, multi-account Terraform CI/CD.

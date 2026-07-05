@@ -1,1 +1,0 @@
-Terraform >= 1.5 with the official `aliyun/alicloud` provider (>= 1.262.1); remote state stored in Alibaba Cloud OSS with Tablestore-backed distributed locks for multi-run concurrency control.

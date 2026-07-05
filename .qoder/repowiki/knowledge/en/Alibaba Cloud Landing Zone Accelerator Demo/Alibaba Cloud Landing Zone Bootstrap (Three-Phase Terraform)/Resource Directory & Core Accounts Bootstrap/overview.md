@@ -1,1 +1,0 @@
-Bootstraps the Alibaba Cloud Resource Directory with a three-folder hierarchy and five core member accounts, forming the landing zone's management-plane foundation.
