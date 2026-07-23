@@ -51,7 +51,10 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform Init
-        run: terraform init -input=false
+        run: |
+          terraform init -input=false \
+            -backend-config="${{ github.workspace }}/backend.tfbackend" \
+            -backend-config="prefix=stacks/${{ matrix.stack.name }}"
 
       - name: Terraform Plan
         env:
@@ -103,7 +106,10 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform Init
-        run: terraform init -input=false
+        run: |
+          terraform init -input=false \
+            -backend-config="${{ github.workspace }}/backend.tfbackend" \
+            -backend-config="prefix=stacks/${{ matrix.stack.name }}"
 
       - name: Terraform Apply
         env:

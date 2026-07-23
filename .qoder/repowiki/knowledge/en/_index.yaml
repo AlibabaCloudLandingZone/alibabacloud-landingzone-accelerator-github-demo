@@ -3,11 +3,11 @@ schema_version: 1
 locale: en-US
 branch: main
 nodes_managed: true
-exported_at: "2026-07-05T12:33:49Z"
+exported_at: "2026-07-05T13:35:21Z"
 modules:
     "":
-        dir_name: Alibaba Cloud Landing Zone Accelerator Demo & Bootstrap
-        title: Alibaba Cloud Landing Zone Accelerator Demo & Bootstrap
+        dir_name: Alibaba Cloud Landing Zone Accelerator — GitHub Actions Demo
+        title: Alibaba Cloud Landing Zone Accelerator — GitHub Actions Demo
         scope: []
         source_files: []
         children: []

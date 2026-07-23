@@ -6,5 +6,4 @@ terraform {
       version = ">= 1.267.0"
     }
   }
-  # NO backend block — starts with local backend, migrated to OSS in phase 2
 }

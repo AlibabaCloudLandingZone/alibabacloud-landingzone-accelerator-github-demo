@@ -29,6 +29,11 @@ on:
         description: "Action to perform: plan or apply"
         required: true
         type: string
+      backend_prefix:
+        description: "Backend state prefix (e.g., bootstrap/00-org-structure). When provided, backend config is injected from backend.tfbackend."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   id-token: write
@@ -60,7 +65,14 @@ jobs:
           terraform_version: ${{ inputs.terraform_version }}
 
       - name: Terraform Init
-        run: terraform init -input=false
+        run: |
+          if [ -n "${{ inputs.backend_prefix }}" ]; then
+            terraform init -input=false \
+              -backend-config="${{ github.workspace }}/backend.tfbackend" \
+              -backend-config="prefix=${{ inputs.backend_prefix }}"
+          else
+            terraform init -input=false
+          fi
 
       - name: Terraform Plan
         if: inputs.terraform_action == 'plan'
