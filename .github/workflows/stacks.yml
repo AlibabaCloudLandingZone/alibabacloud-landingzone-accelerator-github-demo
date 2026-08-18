@@ -22,20 +22,21 @@ jobs:
     strategy:
       matrix:
         stack:
-          - { name: "10-identity-cloudsso", account_key: "devops" }
-          - { name: "11-log-archive", account_key: "log-archive" }
-          - { name: "12-guardrails-preventive", account_key: "devops" }
-          - { name: "13-guardrails-detective", account_key: "security" }
-          - { name: "20-network-cen", account_key: "network" }
-          - { name: "21-network-dmz", account_key: "network" }
-          - { name: "30-security-kms", account_key: "security" }
-          - { name: "30-security-firewall", account_key: "network" }
-          - { name: "30-security-waf", account_key: "shared" }
+          - { name: "10-identity-cloudsso", account_key: "management", iam_account_key: "iam" }
+          - { name: "11-log-archive", account_key: "log-archive", iam_account_key: "" }
+          - { name: "12-guardrails-preventive", account_key: "devops", iam_account_key: "" }
+          - { name: "13-guardrails-detective", account_key: "security", iam_account_key: "" }
+          - { name: "20-network-cen", account_key: "network", iam_account_key: "" }
+          - { name: "21-network-dmz", account_key: "network", iam_account_key: "" }
+          - { name: "30-security-kms", account_key: "security", iam_account_key: "" }
+          - { name: "30-security-firewall", account_key: "network", iam_account_key: "" }
+          - { name: "30-security-waf", account_key: "shared", iam_account_key: "" }
     defaults:
       run:
         working-directory: stacks/${{ matrix.stack.name }}
     env:
       ACCOUNT_ID: ${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.account_key] }}
+      IAM_ACCOUNT_ID: ${{ matrix.stack.iam_account_key != '' && fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.iam_account_key] || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +59,8 @@ jobs:
 
       - name: Terraform Plan
         env:
-          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokePlanRole"
+          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeDeployRole"
+          TF_VAR_iam_role_arn: ${{ env.IAM_ACCOUNT_ID != '' && format('acs:ram::{0}:role/SpokeDeployRole', env.IAM_ACCOUNT_ID) || '' }}
         run: |
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
@@ -77,20 +79,21 @@ jobs:
       max-parallel: 1
       matrix:
         stack:
-          - { name: "10-identity-cloudsso", account_key: "devops" }
-          - { name: "11-log-archive", account_key: "log-archive" }
-          - { name: "12-guardrails-preventive", account_key: "devops" }
-          - { name: "13-guardrails-detective", account_key: "security" }
-          - { name: "20-network-cen", account_key: "network" }
-          - { name: "21-network-dmz", account_key: "network" }
-          - { name: "30-security-kms", account_key: "security" }
-          - { name: "30-security-firewall", account_key: "network" }
-          - { name: "30-security-waf", account_key: "shared" }
+          - { name: "10-identity-cloudsso", account_key: "management", iam_account_key: "iam" }
+          - { name: "11-log-archive", account_key: "log-archive", iam_account_key: "" }
+          - { name: "12-guardrails-preventive", account_key: "devops", iam_account_key: "" }
+          - { name: "13-guardrails-detective", account_key: "security", iam_account_key: "" }
+          - { name: "20-network-cen", account_key: "network", iam_account_key: "" }
+          - { name: "21-network-dmz", account_key: "network", iam_account_key: "" }
+          - { name: "30-security-kms", account_key: "security", iam_account_key: "" }
+          - { name: "30-security-firewall", account_key: "network", iam_account_key: "" }
+          - { name: "30-security-waf", account_key: "shared", iam_account_key: "" }
     defaults:
       run:
         working-directory: stacks/${{ matrix.stack.name }}
     env:
       ACCOUNT_ID: ${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.account_key] }}
+      IAM_ACCOUNT_ID: ${{ matrix.stack.iam_account_key != '' && fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON)[matrix.stack.iam_account_key] || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -113,5 +116,6 @@ jobs:
 
       - name: Terraform Apply
         env:
-          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeApplyRole"
+          TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeDeployRole"
+          TF_VAR_iam_role_arn: ${{ env.IAM_ACCOUNT_ID != '' && format('acs:ram::{0}:role/SpokeDeployRole', env.IAM_ACCOUNT_ID) || '' }}
         run: terraform apply -input=false -auto-approve
