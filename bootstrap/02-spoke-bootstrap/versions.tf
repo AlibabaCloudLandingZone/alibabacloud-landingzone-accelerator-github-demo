@@ -6,5 +6,4 @@ terraform {
       version = ">= 1.262.1"
     }
   }
-  # Initially local backend; migrate to OSS after phase 2 state infra is live.
 }

@@ -3,6 +3,12 @@ provider "alicloud" {
   region = var.region
 }
 
+# Management account alias — same credentials, used for spoke-roles module.
+provider "alicloud" {
+  alias  = "management"
+  region = var.spokes["management"].region
+}
+
 # One provider alias per spoke — chains via ResourceDirectoryAccountAccessRole.
 provider "alicloud" {
   alias  = "log_archive"
@@ -45,6 +51,15 @@ provider "alicloud" {
   region = var.spokes["devops"].region
   assume_role {
     role_arn     = "acs:ram::${var.spokes["devops"].account_id}:role/ResourceDirectoryAccountAccessRole"
+    session_name = "spoke-bootstrap"
+  }
+}
+
+provider "alicloud" {
+  alias  = "iam"
+  region = var.spokes["iam"].region
+  assume_role {
+    role_arn     = "acs:ram::${var.spokes["iam"].account_id}:role/ResourceDirectoryAccountAccessRole"
     session_name = "spoke-bootstrap"
   }
 }

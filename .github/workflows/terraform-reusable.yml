@@ -25,10 +25,20 @@ on:
         required: false
         type: string
         default: ""
+      management_role_arn:
+        description: "Management account role ARN for provider chaining (optional, used by bootstrap/00-org-structure)"
+        required: false
+        type: string
+        default: ""
       terraform_action:
         description: "Action to perform: plan or apply"
         required: true
         type: string
+      backend_prefix:
+        description: "Backend state prefix (e.g., bootstrap/00-org-structure). When provided, backend config is injected from backend.tfbackend."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   id-token: write
@@ -46,6 +56,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Configure Alibaba Cloud credentials (OIDC)
         uses: aliyun/configure-aliyun-credentials-action@v1
@@ -60,22 +72,46 @@ jobs:
           terraform_version: ${{ inputs.terraform_version }}
 
       - name: Terraform Init
-        run: terraform init -input=false
+        env:
+          TFSTATE_BUCKET: ${{ vars.TFSTATE_BUCKET }}
+          TFSTATE_REGION: ${{ vars.TFSTATE_REGION }}
+          TFSTATE_TABLESTORE_ENDPOINT: ${{ vars.TFSTATE_TABLESTORE_ENDPOINT }}
+          TFSTATE_TABLESTORE_TABLE: ${{ vars.TFSTATE_TABLESTORE_TABLE }}
+          BACKEND_PREFIX: ${{ inputs.backend_prefix }}
+        run: |
+          if [ -n "$BACKEND_PREFIX" ]; then
+            terraform init -input=false \
+              -backend-config="bucket=$TFSTATE_BUCKET" \
+              -backend-config="key=terraform.tfstate" \
+              -backend-config="region=$TFSTATE_REGION" \
+              -backend-config="tablestore_endpoint=$TFSTATE_TABLESTORE_ENDPOINT" \
+              -backend-config="tablestore_table=$TFSTATE_TABLESTORE_TABLE" \
+              -backend-config="prefix=$BACKEND_PREFIX"
+          else
+            terraform init -input=false
+          fi
 
       - name: Terraform Plan
         if: inputs.terraform_action == 'plan'
         id: plan
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
         run: |
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
+
+      - name: Derive artifact name
+        if: inputs.terraform_action == 'plan'
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        run: echo "PLAN_ARTIFACT_NAME=plan-${WORKING_DIRECTORY//\//-}" >> "$GITHUB_ENV"
 
       - name: Upload Plan Artifact
         if: inputs.terraform_action == 'plan'
         uses: actions/upload-artifact@v4
         with:
-          name: plan-${{ inputs.working_directory }}
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: ${{ inputs.working_directory }}/plan.txt
 
       - name: Comment Plan on PR
@@ -114,4 +150,5 @@ jobs:
         if: inputs.terraform_action == 'apply'
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
         run: terraform apply -input=false -auto-approve

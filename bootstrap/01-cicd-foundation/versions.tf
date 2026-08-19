@@ -6,6 +6,4 @@ terraform {
       version = ">= 1.262.1"
     }
   }
-  # NO backend block initially — migrate to OSS after apply.
-  # See backend.tf.example for the post-migration configuration.
 }

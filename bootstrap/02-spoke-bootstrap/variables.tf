@@ -16,10 +16,12 @@ variable "spokes" {
     region     = string
   }))
   default = {
+    management = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
     log-archive = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
     security    = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
     network     = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
     shared      = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
     devops      = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
+    iam         = { account_id = "REPLACE_ME", region = "cn-hangzhou" }
   }
 }

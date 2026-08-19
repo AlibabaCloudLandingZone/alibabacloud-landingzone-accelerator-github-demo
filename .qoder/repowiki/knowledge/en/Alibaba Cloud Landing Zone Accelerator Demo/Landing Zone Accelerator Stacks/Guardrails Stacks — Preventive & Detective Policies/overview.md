@@ -1,1 +1,0 @@
-Placeholder Terraform stacks that provision Alibaba Cloud Resource Directory control policies (preventive) and Cloud Config rules (detective) via cross-account spoke role assumption.

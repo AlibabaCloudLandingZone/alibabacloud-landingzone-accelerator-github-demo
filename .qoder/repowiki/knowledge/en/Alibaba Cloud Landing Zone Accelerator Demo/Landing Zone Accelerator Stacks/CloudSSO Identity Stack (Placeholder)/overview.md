@@ -1,1 +1,0 @@
-Terraform stack placeholder for Alibaba Cloud SSO identity resources, configured to run against a spoke role and backed by an OSS state store with Tablestore locking.

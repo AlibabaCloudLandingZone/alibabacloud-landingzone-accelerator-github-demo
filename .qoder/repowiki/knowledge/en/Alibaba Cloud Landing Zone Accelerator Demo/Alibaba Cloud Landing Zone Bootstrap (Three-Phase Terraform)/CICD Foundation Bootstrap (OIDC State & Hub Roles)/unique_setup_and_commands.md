@@ -1,1 +1,0 @@
-Initial apply runs against a local backend using direct CICD account credentials (or via `mgmt` → `ResourceDirectoryAccountAccessRole` assume). To migrate to the OSS backend, export STS credentials obtained by assuming `ResourceDirectoryAccountAccessRole` in the CICD account, then run `terraform init -migrate-state` as documented in `backend.tf.example`.

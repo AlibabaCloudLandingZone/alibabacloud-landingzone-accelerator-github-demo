@@ -1,0 +1,57 @@
+{
+  "ROSTemplateFormatVersion": "2015-09-01",
+  "Description": "Spoke deploy role (SpokeDeployRole) assumed by the hub GitHub Actions roles for landing zone CI/CD.",
+  "Parameters": {
+    "HubAccountId": {
+      "Type": "String",
+      "Description": "Account ID hosting GitHubActionsPlanRole and GitHubActionsApplyRole."
+    }
+  },
+  "Resources": {
+    "SpokeDeployRole": {
+      "Type": "ALIYUN::RAM::Role",
+      "Properties": {
+        "RoleName": "SpokeDeployRole",
+        "Description": "Role assumed by the hub GitHubActions roles for terraform plan and apply.",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "1",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRole",
+              "Principal": {
+                "RAM": [
+                  {
+                    "Fn::Sub": "acs:ram::${HubAccountId}:role/GitHubActionsPlanRole"
+                  },
+                  {
+                    "Fn::Sub": "acs:ram::${HubAccountId}:role/GitHubActionsApplyRole"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "SpokeDeployRoleAdminAttachment": {
+      "Type": "ALIYUN::RAM::AttachPolicyToRole",
+      "Properties": {
+        "PolicyName": "AdministratorAccess",
+        "PolicyType": "System",
+        "RoleName": {
+          "Fn::GetAtt": ["SpokeDeployRole", "RoleName"]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "SpokeDeployRoleArn": {
+      "Description": "ARN of SpokeDeployRole",
+      "Value": {
+        "Fn::GetAtt": ["SpokeDeployRole", "Arn"]
+      }
+    }
+  }
+}
