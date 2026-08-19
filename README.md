@@ -47,7 +47,7 @@ State Backend:
 
 ### Phase 1 — Organization Structure + Spoke Roles
 
-> **Precondition:** enable ROS trusted access with Resource Directory (ROS console → Stack Groups → Enable trusted access) so the SERVICE_MANAGED stack group can deploy into member accounts.
+> **Note:** ROS must be a trusted service in the Resource Directory before a SERVICE_MANAGED stack group can deploy into member accounts. This stack enables it itself, via an ROS stack using `ALIYUN::ROS::AutoEnableService` with `ServiceName = TrustedService/ROS` — no console step required.
 
 ```bash
 cd bootstrap/00-org-structure
