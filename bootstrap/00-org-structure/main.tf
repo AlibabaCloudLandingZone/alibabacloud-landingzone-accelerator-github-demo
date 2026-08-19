@@ -32,12 +32,30 @@ module "accounts" {
 #    before it can run this stage at all. It is created once by hand and then
 #    imported into the two resources below — see README "Seeding the management
 #    role" — so the trust policy stays in code from then on.
-#    Precondition: ROS trusted access must be enabled in the Resource Directory.
 data "alicloud_account" "current" {}
 
 locals {
   hub_account_id       = module.accounts.role_to_account_mapping["devops"]
   spoke_roles_template = file("${path.module}/templates/spoke-roles.json")
+}
+
+# A SERVICE_MANAGED stack group cannot deploy into member accounts until ROS is
+# a trusted service in the Resource Directory. No provider resource exposes that
+# switch, so it is enabled through ROS itself.
+resource "alicloud_ros_stack" "ros_trusted_service" {
+  stack_name = "lza-ros-trusted-service"
+  template_body = jsonencode({
+    ROSTemplateFormatVersion = "2015-09-01"
+    Description              = "Enables ROS as a trusted service in the Resource Directory."
+    Resources = {
+      EnableRosTrustedService = {
+        Type = "ALIYUN::ROS::AutoEnableService"
+        Properties = {
+          ServiceName = "TrustedService/ROS"
+        }
+      }
+    }
+  })
 }
 
 resource "alicloud_ram_role" "spoke_deploy_management" {
@@ -81,13 +99,17 @@ resource "alicloud_ros_stack_group" "spoke_roles" {
     parameter_key   = "HubAccountId"
     parameter_value = local.hub_account_id
   }
+
+  depends_on = [alicloud_ros_stack.ros_trusted_service]
 }
 
-resource "alicloud_ros_stack_instance" "spoke_roles" {
-  for_each = module.accounts.role_to_account_mapping
+resource "alicloud_ros_stack_instances" "spoke_roles" {
+  stack_group_name = alicloud_ros_stack_group.spoke_roles.stack_group_name
+  region_ids       = [var.region]
 
-  stack_group_name          = alicloud_ros_stack_group.spoke_roles.stack_group_name
-  stack_instance_account_id = each.value
-  stack_instance_region_id  = var.region
-  retain_stacks             = false
+  # A SERVICE_MANAGED stack group only accepts deployment targets, never bare
+  # account IDs, so this cannot use the singular alicloud_ros_stack_instance.
+  deployment_targets {
+    account_ids = values(module.accounts.role_to_account_mapping)
+  }
 }
