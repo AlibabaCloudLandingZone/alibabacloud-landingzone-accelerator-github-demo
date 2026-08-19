@@ -101,11 +101,17 @@ jobs:
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
 
+      - name: Derive artifact name
+        if: inputs.terraform_action == 'plan'
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        run: echo "PLAN_ARTIFACT_NAME=plan-${WORKING_DIRECTORY//\//-}" >> "$GITHUB_ENV"
+
       - name: Upload Plan Artifact
         if: inputs.terraform_action == 'plan'
         uses: actions/upload-artifact@v4
         with:
-          name: plan-${{ inputs.working_directory }}
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: ${{ inputs.working_directory }}/plan.txt
 
       - name: Comment Plan on PR
