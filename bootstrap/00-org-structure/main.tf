@@ -83,11 +83,13 @@ resource "alicloud_ros_stack_group" "spoke_roles" {
   }
 }
 
-resource "alicloud_ros_stack_instance" "spoke_roles" {
-  for_each = module.accounts.role_to_account_mapping
+resource "alicloud_ros_stack_instances" "spoke_roles" {
+  stack_group_name = alicloud_ros_stack_group.spoke_roles.stack_group_name
+  region_ids       = [var.region]
 
-  stack_group_name          = alicloud_ros_stack_group.spoke_roles.stack_group_name
-  stack_instance_account_id = each.value
-  stack_instance_region_id  = var.region
-  retain_stacks             = false
+  # A SERVICE_MANAGED stack group only accepts deployment targets, never bare
+  # account IDs, so this cannot use the singular alicloud_ros_stack_instance.
+  deployment_targets {
+    account_ids = values(module.accounts.role_to_account_mapping)
+  }
 }
