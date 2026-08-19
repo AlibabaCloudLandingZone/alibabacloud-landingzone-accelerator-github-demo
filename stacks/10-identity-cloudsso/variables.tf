@@ -125,12 +125,12 @@ variable "saml_identity_provider" {
   default = null
 
   validation {
-    condition     = var.saml_identity_provider == null || contains(["Post", "Redirect"], var.saml_identity_provider.binding_type)
+    condition     = var.saml_identity_provider == null || contains(["Post", "Redirect"], try(var.saml_identity_provider.binding_type, "Post"))
     error_message = "binding_type must be either Post or Redirect."
   }
 
   validation {
-    condition     = var.saml_identity_provider == null || contains(["Enabled", "Disabled"], var.saml_identity_provider.sso_status)
+    condition     = var.saml_identity_provider == null || contains(["Enabled", "Disabled"], try(var.saml_identity_provider.sso_status, "Enabled"))
     error_message = "sso_status must be either Enabled or Disabled."
   }
 }
