@@ -23,6 +23,8 @@ jobs:
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
+      # Stacks are independent; one failing stack must not cancel the others.
+      fail-fast: false
       matrix:
         stack:
           - { name: "10-identity-cloudsso", account_key: "management", iam_account_key: "iam" }
