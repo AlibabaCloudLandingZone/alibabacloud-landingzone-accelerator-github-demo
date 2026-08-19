@@ -17,3 +17,11 @@ output "account_ids" {
   description = "Map of role names to account IDs"
   value       = module.accounts.role_to_account_mapping
 }
+
+output "spoke_deploy_role_arns" {
+  description = "Map of account keys to their SpokeDeployRole ARNs (incl. management)"
+  value = merge(
+    { for k, id in module.accounts.role_to_account_mapping : k => "acs:ram::${id}:role/SpokeDeployRole" },
+    { management = "acs:ram::${data.alicloud_account.current.id}:role/SpokeDeployRole" }
+  )
+}
