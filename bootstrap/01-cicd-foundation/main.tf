@@ -131,8 +131,8 @@ resource "alicloud_ram_role" "github_apply" {
 
 # =============================================================================
 # 4. Hub role policies
-#    Plan role: read state + assume SpokePlanRole
-#    Apply role: read/write state + assume SpokeApplyRole
+#    Plan role: read state + assume SpokeDeployRole
+#    Apply role: read/write state + assume SpokeDeployRole
 # =============================================================================
 
 resource "alicloud_ram_policy" "hub_chain_plan" {
@@ -143,7 +143,7 @@ resource "alicloud_ram_policy" "hub_chain_plan" {
       {
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
-        Resource = ["acs:ram::*:role/SpokePlanRole"]
+        Resource = ["acs:ram::*:role/SpokeDeployRole"]
       },
       {
         Effect   = "Allow"
@@ -167,7 +167,7 @@ resource "alicloud_ram_policy" "hub_chain_apply" {
       {
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
-        Resource = ["acs:ram::*:role/SpokeApplyRole"]
+        Resource = ["acs:ram::*:role/SpokeDeployRole"]
       },
       {
         Effect   = "Allow"
