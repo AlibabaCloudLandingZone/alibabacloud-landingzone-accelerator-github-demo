@@ -52,10 +52,20 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform Init
+        env:
+          TFSTATE_BUCKET: ${{ vars.TFSTATE_BUCKET }}
+          TFSTATE_REGION: ${{ vars.TFSTATE_REGION }}
+          TFSTATE_TABLESTORE_ENDPOINT: ${{ vars.TFSTATE_TABLESTORE_ENDPOINT }}
+          TFSTATE_TABLESTORE_TABLE: ${{ vars.TFSTATE_TABLESTORE_TABLE }}
+          BACKEND_PREFIX: stacks/${{ matrix.stack.name }}
         run: |
           terraform init -input=false \
-            -backend-config="${{ github.workspace }}/backend.tfbackend" \
-            -backend-config="prefix=stacks/${{ matrix.stack.name }}"
+            -backend-config="bucket=$TFSTATE_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=$TFSTATE_REGION" \
+            -backend-config="tablestore_endpoint=$TFSTATE_TABLESTORE_ENDPOINT" \
+            -backend-config="tablestore_table=$TFSTATE_TABLESTORE_TABLE" \
+            -backend-config="prefix=$BACKEND_PREFIX"
 
       - name: Terraform Plan
         env:
@@ -109,10 +119,20 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform Init
+        env:
+          TFSTATE_BUCKET: ${{ vars.TFSTATE_BUCKET }}
+          TFSTATE_REGION: ${{ vars.TFSTATE_REGION }}
+          TFSTATE_TABLESTORE_ENDPOINT: ${{ vars.TFSTATE_TABLESTORE_ENDPOINT }}
+          TFSTATE_TABLESTORE_TABLE: ${{ vars.TFSTATE_TABLESTORE_TABLE }}
+          BACKEND_PREFIX: stacks/${{ matrix.stack.name }}
         run: |
           terraform init -input=false \
-            -backend-config="${{ github.workspace }}/backend.tfbackend" \
-            -backend-config="prefix=stacks/${{ matrix.stack.name }}"
+            -backend-config="bucket=$TFSTATE_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=$TFSTATE_REGION" \
+            -backend-config="tablestore_endpoint=$TFSTATE_TABLESTORE_ENDPOINT" \
+            -backend-config="tablestore_table=$TFSTATE_TABLESTORE_TABLE" \
+            -backend-config="prefix=$BACKEND_PREFIX"
 
       - name: Terraform Apply
         env:

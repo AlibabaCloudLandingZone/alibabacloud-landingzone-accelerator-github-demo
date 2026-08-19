@@ -98,6 +98,12 @@ Repeat for each bootstrap directory.
 | `GHA_APPLY_ROLE_ARN` | Apply role ARN | `acs:ram::1234567890123456:role/GitHubActionsApplyRole` |
 | `OIDC_PROVIDER_ARN` | OIDC provider ARN | `acs:ram::1234567890123456:oidc-provider/GitHubActions` |
 | `SPOKE_ACCOUNT_IDS_JSON` | JSON map of spoke accounts. Must include `management` and `iam` for the Cloud SSO stack | `{"management":"111...","iam":"222...","devops":"123...","log-archive":"456...","security":"789..."}` |
+| `TFSTATE_BUCKET` | OSS bucket holding Terraform state | `lza-tfstate-1234567890123456` |
+| `TFSTATE_REGION` | Region of the state bucket and lock table | `cn-hangzhou` |
+| `TFSTATE_TABLESTORE_ENDPOINT` | Tablestore endpoint used for state locking | `https://tflock-123456.cn-hangzhou.ots.aliyuncs.com` |
+| `TFSTATE_TABLESTORE_TABLE` | Tablestore lock table name | `tflock` |
+
+The workflows build the OSS backend configuration from these four variables at `terraform init` time. `backend.tfbackend` is for local use only and is intentionally not committed, so the bucket name and account ID stay out of this public repository.
 
 ## Security Model
 
