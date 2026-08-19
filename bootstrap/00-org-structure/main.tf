@@ -28,15 +28,42 @@ module "accounts" {
 #    A single role serves both plan and apply because alicloud provider data
 #    sources activate services, which exceeds ReadOnlyAccess.
 #    Role ARN is deterministic: acs:ram::<account_id>:role/SpokeDeployRole
-#    The management account's SpokeDeployRole is NOT managed here: CI must
-#    already be able to assume it to run this stage (see var.management_role_arn),
-#    so it is seeded once by hand — see README "Seeding the management role".
+#    The management account's copy cannot come from ROS: CI has to assume it
+#    before it can run this stage at all. It is created once by hand and then
+#    imported into the two resources below — see README "Seeding the management
+#    role" — so the trust policy stays in code from then on.
 #    Precondition: ROS trusted access must be enabled in the Resource Directory.
 data "alicloud_account" "current" {}
 
 locals {
   hub_account_id       = module.accounts.role_to_account_mapping["devops"]
   spoke_roles_template = file("${path.module}/templates/spoke-roles.json")
+}
+
+resource "alicloud_ram_role" "spoke_deploy_management" {
+  name                 = "SpokeDeployRole"
+  description          = "Role assumed by the hub GitHubActions roles for terraform plan and apply."
+  max_session_duration = 3600
+  document = jsonencode({
+    Version = "1"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sts:AssumeRole"
+      Principal = {
+        # RAM stores principal ARNs lowercased; matching that avoids a permanent diff.
+        RAM = [
+          lower("acs:ram::${local.hub_account_id}:role/GitHubActionsPlanRole"),
+          lower("acs:ram::${local.hub_account_id}:role/GitHubActionsApplyRole"),
+        ]
+      }
+    }]
+  })
+}
+
+resource "alicloud_ram_role_policy_attachment" "spoke_deploy_management" {
+  role_name   = alicloud_ram_role.spoke_deploy_management.name
+  policy_name = "AdministratorAccess"
+  policy_type = "System"
 }
 
 resource "alicloud_ros_stack_group" "spoke_roles" {

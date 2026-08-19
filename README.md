@@ -61,14 +61,24 @@ Creates: Resource Directory, folders, member accounts, and `SpokeDeployRole` in 
 
 #### Seeding the management role
 
-The management account's `SpokeDeployRole` is **not** managed by Terraform: CI must already be able to assume it in order to run this stage, so ROS cannot create it. Seed it once with management-account credentials, substituting your CICD (hub) account ID:
+The management account's `SpokeDeployRole` cannot come from ROS: CI must already be able to assume it in order to run this stage. Create it once with management-account credentials, substituting your CICD (hub) account ID:
 
 ```bash
 HUB=1234567890123456
-aliyun ram CreateRole --RoleName SpokeDeployRole \
+aliyun ram CreateRole --RoleName SpokeDeployRole --MaxSessionDuration 3600 \
+  --Description "Role assumed by the hub GitHubActions roles for terraform plan and apply." \
   --AssumeRolePolicyDocument "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"RAM\":[\"acs:ram::$HUB:role/GitHubActionsPlanRole\",\"acs:ram::$HUB:role/GitHubActionsApplyRole\"]}}]}"
 aliyun ram AttachPolicyToRole --PolicyType System --PolicyName AdministratorAccess --RoleName SpokeDeployRole
 ```
+
+Then hand it to Terraform so the trust policy lives in code from that point on:
+
+```bash
+terraform import alicloud_ram_role.spoke_deploy_management SpokeDeployRole
+terraform import alicloud_ram_role_policy_attachment.spoke_deploy_management role:AdministratorAccess:System:SpokeDeployRole
+```
+
+> **Note:** RAM stores principal ARNs lowercased, which is why the trust policy in `main.tf` wraps them in `lower()`. Without that, every plan reports a spurious in-place update.
 
 The hub policies already allow `sts:AssumeRole` on `acs:ram::*:role/SpokeDeployRole`, so no policy change is needed. After this, CI runs Phase 1 itself: the workflow passes `management_role_arn`, and the provider chains hub role → management `SpokeDeployRole`. Local runs leave `management_role_arn` empty and use ambient management-account credentials.
 
