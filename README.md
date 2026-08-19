@@ -55,9 +55,22 @@ terraform init
 terraform apply
 ```
 
-Creates: Resource Directory, folders, member accounts, and `SpokeDeployRole` in every account — via an ROS stack group (member accounts) and an ROS stack (management account) sharing one template (`templates/spoke-roles.json`).
+Creates: Resource Directory, folders, member accounts, and `SpokeDeployRole` in every **member** account — via a SERVICE_MANAGED ROS stack group using `templates/spoke-roles.json`.
 
 > **Note:** the spoke role trust policy references the hub roles created in Phase 2; Alibaba RAM accepts the principal ARN before the roles exist, so the order 00 → 01 still works.
+
+#### Seeding the management role
+
+The management account's `SpokeDeployRole` is **not** managed by Terraform: CI must already be able to assume it in order to run this stage, so ROS cannot create it. Seed it once with management-account credentials, substituting your CICD (hub) account ID:
+
+```bash
+HUB=1234567890123456
+aliyun ram CreateRole --RoleName SpokeDeployRole \
+  --AssumeRolePolicyDocument "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"RAM\":[\"acs:ram::$HUB:role/GitHubActionsPlanRole\",\"acs:ram::$HUB:role/GitHubActionsApplyRole\"]}}]}"
+aliyun ram AttachPolicyToRole --PolicyType System --PolicyName AdministratorAccess --RoleName SpokeDeployRole
+```
+
+The hub policies already allow `sts:AssumeRole` on `acs:ram::*:role/SpokeDeployRole`, so no policy change is needed. After this, CI runs Phase 1 itself: the workflow passes `management_role_arn`, and the provider chains hub role → management `SpokeDeployRole`. Local runs leave `management_role_arn` empty and use ambient management-account credentials.
 
 ### Phase 2 — CI/CD Foundation
 

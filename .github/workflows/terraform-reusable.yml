@@ -25,6 +25,11 @@ on:
         required: false
         type: string
         default: ""
+      management_role_arn:
+        description: "Management account role ARN for provider chaining (optional, used by bootstrap/00-org-structure)"
+        required: false
+        type: string
+        default: ""
       terraform_action:
         description: "Action to perform: plan or apply"
         required: true
@@ -89,6 +94,7 @@ jobs:
         id: plan
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
         run: |
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
@@ -136,4 +142,5 @@ jobs:
         if: inputs.terraform_action == 'apply'
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
         run: terraform apply -input=false -auto-approve

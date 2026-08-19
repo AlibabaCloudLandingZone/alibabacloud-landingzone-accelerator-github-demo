@@ -24,11 +24,13 @@ module "accounts" {
 }
 
 # 3. Spoke Role (SpokeDeployRole)
-#    Deployed into every member account via a SERVICE_MANAGED ROS stack group,
-#    and into the management account via a plain ROS stack reusing the same
-#    template. A single role serves both plan and apply because alicloud
-#    provider data sources activate services, which exceeds ReadOnlyAccess.
+#    Deployed into every member account via a SERVICE_MANAGED ROS stack group.
+#    A single role serves both plan and apply because alicloud provider data
+#    sources activate services, which exceeds ReadOnlyAccess.
 #    Role ARN is deterministic: acs:ram::<account_id>:role/SpokeDeployRole
+#    The management account's SpokeDeployRole is NOT managed here: CI must
+#    already be able to assume it to run this stage (see var.management_role_arn),
+#    so it is seeded once by hand — see README "Seeding the management role".
 #    Precondition: ROS trusted access must be enabled in the Resource Directory.
 data "alicloud_account" "current" {}
 
@@ -61,14 +63,4 @@ resource "alicloud_ros_stack_instance" "spoke_roles" {
   stack_instance_account_id = each.value
   stack_instance_region_id  = var.region
   retain_stacks             = false
-}
-
-resource "alicloud_ros_stack" "spoke_roles_management" {
-  stack_name    = "lza-spoke-roles"
-  template_body = local.spoke_roles_template
-
-  parameters {
-    parameter_key   = "HubAccountId"
-    parameter_value = local.hub_account_id
-  }
 }

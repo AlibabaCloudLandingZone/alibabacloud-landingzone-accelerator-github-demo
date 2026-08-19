@@ -4,6 +4,12 @@ variable "region" {
   default     = "cn-hangzhou"
 }
 
+variable "management_role_arn" {
+  description = "ARN of the management account SpokeDeployRole to assume (injected via TF_VAR_management_role_arn in CI). Leave empty when running locally with management account credentials."
+  type        = string
+  default     = ""
+}
+
 variable "folder_structure" {
   description = "List of folders to create in the Resource Directory"
   type = list(object({

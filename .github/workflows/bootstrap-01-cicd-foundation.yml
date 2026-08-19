@@ -21,7 +21,7 @@ jobs:
     uses: ./.github/workflows/terraform-reusable.yml
     with:
       working_directory: bootstrap/01-cicd-foundation
-      role_to_assume: ${{ vars.GHA_APPLY_ROLE_ARN }}
+      role_to_assume: ${{ vars.GHA_PLAN_ROLE_ARN }}
       oidc_provider_arn: ${{ vars.OIDC_PROVIDER_ARN }}
       terraform_action: plan
       backend_prefix: bootstrap/01-cicd-foundation
