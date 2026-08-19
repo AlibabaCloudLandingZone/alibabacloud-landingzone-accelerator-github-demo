@@ -25,6 +25,16 @@ on:
         required: false
         type: string
         default: ""
+      management_role_arn:
+        description: "Management account role ARN for provider chaining (optional, used by bootstrap/00-org-structure)"
+        required: false
+        type: string
+        default: ""
+      var_file:
+        description: "Variable definitions file, relative to working_directory, for stages whose required variables are not defaulted (optional)"
+        required: false
+        type: string
+        default: ""
       terraform_action:
         description: "Action to perform: plan or apply"
         required: true
@@ -51,6 +61,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Configure Alibaba Cloud credentials (OIDC)
         uses: aliyun/configure-aliyun-credentials-action@v1
@@ -65,11 +77,21 @@ jobs:
           terraform_version: ${{ inputs.terraform_version }}
 
       - name: Terraform Init
+        env:
+          TFSTATE_BUCKET: ${{ vars.TFSTATE_BUCKET }}
+          TFSTATE_REGION: ${{ vars.TFSTATE_REGION }}
+          TFSTATE_TABLESTORE_ENDPOINT: ${{ vars.TFSTATE_TABLESTORE_ENDPOINT }}
+          TFSTATE_TABLESTORE_TABLE: ${{ vars.TFSTATE_TABLESTORE_TABLE }}
+          BACKEND_PREFIX: ${{ inputs.backend_prefix }}
         run: |
-          if [ -n "${{ inputs.backend_prefix }}" ]; then
+          if [ -n "$BACKEND_PREFIX" ]; then
             terraform init -input=false \
-              -backend-config="${{ github.workspace }}/backend.tfbackend" \
-              -backend-config="prefix=${{ inputs.backend_prefix }}"
+              -backend-config="bucket=$TFSTATE_BUCKET" \
+              -backend-config="key=terraform.tfstate" \
+              -backend-config="region=$TFSTATE_REGION" \
+              -backend-config="tablestore_endpoint=$TFSTATE_TABLESTORE_ENDPOINT" \
+              -backend-config="tablestore_table=$TFSTATE_TABLESTORE_TABLE" \
+              -backend-config="prefix=$BACKEND_PREFIX"
           else
             terraform init -input=false
           fi
@@ -79,15 +101,27 @@ jobs:
         id: plan
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
+          VAR_FILE: ${{ inputs.var_file }}
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ -n "$VAR_FILE" ]; then
+            terraform plan -input=false -no-color -out=tfplan -var-file="$VAR_FILE"
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
+
+      - name: Derive artifact name
+        if: inputs.terraform_action == 'plan'
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        run: echo "PLAN_ARTIFACT_NAME=plan-${WORKING_DIRECTORY//\//-}" >> "$GITHUB_ENV"
 
       - name: Upload Plan Artifact
         if: inputs.terraform_action == 'plan'
         uses: actions/upload-artifact@v4
         with:
-          name: plan-${{ inputs.working_directory }}
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: ${{ inputs.working_directory }}/plan.txt
 
       - name: Comment Plan on PR
@@ -126,4 +160,11 @@ jobs:
         if: inputs.terraform_action == 'apply'
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
-        run: terraform apply -input=false -auto-approve
+          TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
+          VAR_FILE: ${{ inputs.var_file }}
+        run: |
+          if [ -n "$VAR_FILE" ]; then
+            terraform apply -input=false -auto-approve -var-file="$VAR_FILE"
+          else
+            terraform apply -input=false -auto-approve
+          fi
