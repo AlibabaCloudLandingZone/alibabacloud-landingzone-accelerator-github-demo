@@ -23,6 +23,7 @@ jobs:
       working_directory: bootstrap/01-cicd-foundation
       role_to_assume: ${{ vars.GHA_PLAN_ROLE_ARN }}
       oidc_provider_arn: ${{ vars.OIDC_PROVIDER_ARN }}
+      spoke_role_arn: acs:ram::${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON).devops }}:role/SpokeDeployRole
       var_file: prod.tfvars
       terraform_action: plan
       backend_prefix: bootstrap/01-cicd-foundation
@@ -34,6 +35,7 @@ jobs:
       working_directory: bootstrap/01-cicd-foundation
       role_to_assume: ${{ vars.GHA_APPLY_ROLE_ARN }}
       oidc_provider_arn: ${{ vars.OIDC_PROVIDER_ARN }}
+      spoke_role_arn: acs:ram::${{ fromJSON(vars.SPOKE_ACCOUNT_IDS_JSON).devops }}:role/SpokeDeployRole
       var_file: prod.tfvars
       terraform_action: apply
       backend_prefix: bootstrap/01-cicd-foundation
