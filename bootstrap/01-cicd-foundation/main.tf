@@ -49,6 +49,12 @@ resource "alicloud_oss_bucket" "tfstate" {
       days = 90
     }
   }
+
+  lifecycle {
+    # Alibaba Cloud Security attaches an IP-allowlist bucket policy out of band.
+    # It is not modelled here, and Terraform would otherwise delete it.
+    ignore_changes = [policy]
+  }
 }
 
 resource "alicloud_ots_instance" "tflock" {
@@ -73,10 +79,17 @@ resource "alicloud_ots_table" "tflock" {
 # =============================================================================
 
 resource "alicloud_ims_oidc_provider" "github" {
-  oidc_provider_name  = "GitHubActions"
-  issuer_url          = "https://token.actions.githubusercontent.com"
-  client_ids          = ["sts.aliyuncs.com"]
-  fingerprints        = ["22FF89586561FC2D52F77491E9F1EFF1B80BE33E"]
+  oidc_provider_name = "GitHubActions"
+  issuer_url         = "https://token.actions.githubusercontent.com"
+  client_ids         = ["sts.aliyuncs.com"]
+  # GitHub moved token.actions.githubusercontent.com onto a Let's Encrypt chain,
+  # so the ISRG Root YR thumbprint is the one STS validates against today. The
+  # older thumbprint is retained deliberately: dropping a thumbprint that is
+  # still in use breaks every workflow's login. RAM stores these lowercased.
+  fingerprints = [
+    "22ff89586561fc2d52f77491e9f1eff1b80be33e",
+    "ab9d0263244dd0326eb67015705a667e79cfe998",
+  ]
   issuance_limit_time = 12
   description         = "OIDC provider for GitHub Actions CI/CD"
 }
@@ -141,9 +154,11 @@ resource "alicloud_ram_policy" "hub_chain_plan" {
     Version = "1"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = ["acs:ram::*:role/SpokeDeployRole"]
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        # RAM collapses a single-element Resource to a string; matching that
+        # avoids a permanent diff.
+        Resource = "acs:ram::*:role/SpokeDeployRole"
       },
       {
         # The alicloud_oss_service and alicloud_ots_service data sources activate
@@ -172,9 +187,11 @@ resource "alicloud_ram_policy" "hub_chain_apply" {
     Version = "1"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = ["acs:ram::*:role/SpokeDeployRole"]
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        # RAM collapses a single-element Resource to a string; matching that
+        # avoids a permanent diff.
+        Resource = "acs:ram::*:role/SpokeDeployRole"
       },
       {
         # The alicloud_oss_service and alicloud_ots_service data sources activate
