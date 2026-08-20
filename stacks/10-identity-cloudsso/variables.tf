@@ -55,7 +55,7 @@ variable "login_preference" {
   default = {}
 
   validation {
-    condition     = var.login_preference.login_network_masks == null || length(coalesce(var.login_preference.login_network_masks, "")) > 0
+    condition     = var.login_preference.login_network_masks != ""
     error_message = "login_network_masks must be omitted or a non-empty newline-separated list of CIDR masks."
   }
 }
@@ -294,7 +294,7 @@ variable "users" {
   validation {
     condition = alltrue([
       for user in var.users :
-      user.email == null || can(regex("^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$", coalesce(user.email, "")))
+      user.email == null || can(regex("^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$", user.email))
     ])
     error_message = "Each user email, when set, must be a valid address."
   }
