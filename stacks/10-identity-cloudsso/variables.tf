@@ -47,11 +47,12 @@ variable "directory_name" {
 }
 
 variable "login_preference" {
-  description = "Portal login preferences for the directory. Set in prod.tfvars."
+  description = "Portal login preferences for the directory. Defaults to withholding access-key issuance from portal users; prod.tfvars overrides."
   type = object({
-    allow_user_to_get_credentials = bool
+    allow_user_to_get_credentials = optional(bool, false)
     login_network_masks           = optional(string)
   })
+  default = {}
 
   validation {
     condition     = var.login_preference.login_network_masks == null || length(coalesce(var.login_preference.login_network_masks, "")) > 0
@@ -60,11 +61,12 @@ variable "login_preference" {
 }
 
 variable "mfa_authentication_setting_info" {
-  description = "Global MFA verification policy for the directory. Set in prod.tfvars."
+  description = "Global MFA verification policy for the directory. Defaults to Enabled, which requires MFA on every login; prod.tfvars overrides."
   type = object({
-    mfa_authentication_advance_settings = string
+    mfa_authentication_advance_settings = optional(string, "Enabled")
     operation_for_risk_login            = optional(string)
   })
+  default = {}
 
   validation {
     condition     = contains(["Enabled", "ByUser", "Disabled", "OnlyRiskyLogin"], var.mfa_authentication_setting_info.mfa_authentication_advance_settings)
@@ -81,15 +83,16 @@ variable "mfa_authentication_setting_info" {
 }
 
 variable "password_policy" {
-  description = "Password policy for directory-local users. Set in prod.tfvars."
+  description = "Password policy for directory-local users. Defaults to a hardened baseline; prod.tfvars overrides."
   type = object({
-    max_login_attempts            = number
-    max_password_age              = number
-    min_password_different_chars  = number
-    min_password_length           = number
-    password_not_contain_username = bool
-    password_reuse_prevention     = number
+    max_login_attempts            = optional(number, 5)
+    max_password_age              = optional(number, 90)
+    min_password_different_chars  = optional(number, 4)
+    min_password_length           = optional(number, 12)
+    password_not_contain_username = optional(bool, true)
+    password_reuse_prevention     = optional(number, 3)
   })
+  default = {}
 
   validation {
     condition     = var.password_policy.min_password_length >= 8 && var.password_policy.min_password_length <= 32
@@ -118,13 +121,15 @@ variable "password_policy" {
 }
 
 variable "scim_synchronization_enabled" {
-  description = "Whether SCIM user provisioning is enabled on the directory. Set in prod.tfvars."
+  description = "Whether SCIM user provisioning is enabled on the directory. Defaults to disabled; prod.tfvars overrides."
   type        = bool
+  default     = false
 }
 
 variable "create_scim_server_credential" {
-  description = "Whether to create a SCIM server credential. The credential secret is only returned at creation time and cannot be recovered afterwards, so leave this off in CI and generate the credential in the console instead. Set in prod.tfvars."
+  description = "Whether to create a SCIM server credential. The credential secret is only returned at creation time and cannot be recovered afterwards, so leave this off in CI and generate the credential in the console instead."
   type        = bool
+  default     = false
 }
 
 variable "saml_identity_provider" {
