@@ -85,9 +85,10 @@ resource "alicloud_ims_oidc_provider" "github" {
   # GitHub moved token.actions.githubusercontent.com onto a Let's Encrypt chain,
   # so the ISRG Root YR thumbprint is the one STS validates against today. The
   # older thumbprint is retained deliberately: dropping a thumbprint that is
-  # still in use breaks every workflow's login. RAM stores these lowercased.
+  # still in use breaks every workflow's login. RAM keeps the case a thumbprint
+  # was submitted in, so these must match what is stored.
   fingerprints = [
-    "22ff89586561fc2d52f77491e9f1eff1b80be33e",
+    "22FF89586561FC2D52F77491E9F1EFF1B80BE33E",
     "ab9d0263244dd0326eb67015705a667e79cfe998",
   ]
   issuance_limit_time = 12
