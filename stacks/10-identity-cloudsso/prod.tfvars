@@ -58,6 +58,49 @@ access_configurations = [
       policy_document = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"log:Get*\",\"log:List*\"],\"Resource\":[\"acs:log:*:*:project/*\"]}]}"
     }
   },
+  {
+    name = "PowerUser"
+    # No Alibaba Cloud system policy matches this shape, so administrative access is granted and the
+    # sensitive services are subtracted: an explicit Deny outranks any Allow in RAM evaluation.
+    description             = "Build and operate workloads, without access to identity, organization or billing."
+    managed_system_policies = ["AdministratorAccess"]
+    session_duration        = 7200
+    inline_custom_policy = {
+      policy_name     = "DenyIdentityAndBilling"
+      policy_document = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Deny\",\"Action\":[\"ram:*\",\"resourcemanager:*\",\"cloudsso:*\",\"bss:*\"],\"Resource\":\"*\"}]}"
+    }
+  },
+  {
+    name        = "DatabaseAdmin"
+    description = "Administer RDS, PolarDB, Redis, MongoDB and the data transmission and management services."
+    managed_system_policies = [
+      "AliyunRDSFullAccess",
+      "AliyunPolardbFullAccess",
+      "AliyunKvstoreFullAccess",
+      "AliyunMongoDBFullAccess",
+      "AliyunDTSFullAccess",
+      "AliyunDMSFullAccess",
+    ]
+    session_duration = 7200
+  },
+  {
+    name                    = "BillingAdmin"
+    description             = "Manage orders, invoices and cost allocation in the billing console."
+    managed_system_policies = ["AliyunBSSFullAccess"]
+    session_duration        = 3600
+  },
+  {
+    name                    = "BillingReadOnly"
+    description             = "Read cost and usage data for chargeback reporting."
+    managed_system_policies = ["AliyunBSSReadOnlyAccess"]
+    session_duration        = 14400
+  },
+  {
+    name                    = "SupportOperator"
+    description             = "Raise and manage support tickets without access to workload resources."
+    managed_system_policies = ["AliyunSupportFullAccess"]
+    session_duration        = 14400
+  },
 ]
 
 users = [
