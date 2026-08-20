@@ -1,23 +1,38 @@
 variable "region" {
-  description = "Alibaba Cloud region for this stack. Cloud SSO has no cn-hangzhou endpoint; use one of cn-shanghai, cn-hongkong, ap-northeast-2, ap-southeast-1, us-west-1."
+  description = "Alibaba Cloud region for this stack. Cloud SSO has no cn-hangzhou endpoint; use one of cn-shanghai, cn-hongkong, ap-northeast-2, ap-southeast-1, us-west-1. Set in prod.tfvars."
   type        = string
-  default     = "cn-shanghai"
+  default     = ""
+
+  validation {
+    condition     = contains(["cn-shanghai", "cn-hongkong", "ap-northeast-2", "ap-southeast-1", "us-west-1"], var.region)
+    error_message = "region must be set to a region with a Cloud SSO endpoint: cn-shanghai, cn-hongkong, ap-northeast-2, ap-southeast-1 or us-west-1."
+  }
 }
 
 variable "spoke_role_arn" {
   description = "ARN of the management account SpokeDeployRole to assume (injected via TF_VAR_spoke_role_arn). Owns the Cloud SSO directory."
   type        = string
+
+  validation {
+    condition     = can(regex("^acs:ram::[0-9]{12,20}:role/[A-Za-z0-9_+=,.@-]+$", var.spoke_role_arn))
+    error_message = "spoke_role_arn must be a RAM role ARN of the form acs:ram::<account-id>:role/<role-name>."
+  }
 }
 
 variable "iam_role_arn" {
   description = "ARN of the SpokeDeployRole in the delegated-administrator iam account (injected via TF_VAR_iam_role_arn). Owns access configurations, users, groups and assignments."
   type        = string
+
+  validation {
+    condition     = can(regex("^acs:ram::[0-9]{12,20}:role/[A-Za-z0-9_+=,.@-]+$", var.iam_role_arn))
+    error_message = "iam_role_arn must be a RAM role ARN of the form acs:ram::<account-id>:role/<role-name>."
+  }
 }
 
 variable "directory_name" {
-  description = "Cloud SSO directory name. Lowercase letters, digits and hyphens; cannot start or end with a hyphen or start with 'd-'."
+  description = "Cloud SSO directory name. Lowercase letters, digits and hyphens; cannot start or end with a hyphen or start with 'd-'. Set in prod.tfvars."
   type        = string
-  default     = "lz-prod-sso"
+  default     = ""
 
   validation {
     condition = (
@@ -27,21 +42,26 @@ variable "directory_name" {
       !can(regex("--", var.directory_name)) &&
       !can(regex("^d-", var.directory_name))
     )
-    error_message = "directory_name must be 2-64 characters of lowercase letters, digits or hyphens, must not start or end with a hyphen, must not contain consecutive hyphens, and must not start with 'd-'."
+    error_message = "directory_name must be set to 2-64 characters of lowercase letters, digits or hyphens, must not start or end with a hyphen, must not contain consecutive hyphens, and must not start with 'd-'."
   }
 }
 
 variable "login_preference" {
-  description = "Portal login preferences for the directory."
+  description = "Portal login preferences for the directory. Defaults to withholding access-key issuance from portal users; prod.tfvars overrides."
   type = object({
-    allow_user_to_get_credentials = optional(bool, true)
+    allow_user_to_get_credentials = optional(bool, false)
     login_network_masks           = optional(string)
   })
   default = {}
+
+  validation {
+    condition     = var.login_preference.login_network_masks != ""
+    error_message = "login_network_masks must be omitted or a non-empty newline-separated list of CIDR masks."
+  }
 }
 
 variable "mfa_authentication_setting_info" {
-  description = "Global MFA verification policy for the directory."
+  description = "Global MFA verification policy for the directory. Defaults to Enabled, which requires MFA on every login; prod.tfvars overrides."
   type = object({
     mfa_authentication_advance_settings = optional(string, "Enabled")
     operation_for_risk_login            = optional(string)
@@ -63,7 +83,7 @@ variable "mfa_authentication_setting_info" {
 }
 
 variable "password_policy" {
-  description = "Password policy for directory-local users."
+  description = "Password policy for directory-local users. Defaults to a hardened baseline; prod.tfvars overrides."
   type = object({
     max_login_attempts            = optional(number, 5)
     max_password_age              = optional(number, 90)
@@ -101,9 +121,9 @@ variable "password_policy" {
 }
 
 variable "scim_synchronization_enabled" {
-  description = "Whether SCIM user provisioning is enabled on the directory."
+  description = "Whether SCIM user provisioning is enabled on the directory. Defaults to disabled; prod.tfvars overrides."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "create_scim_server_credential" {
@@ -123,6 +143,15 @@ variable "saml_identity_provider" {
     sso_status                = optional(string, "Enabled")
   })
   default = null
+
+  validation {
+    condition = var.saml_identity_provider == null || alltrue([
+      length(try(var.saml_identity_provider.entity_id, "")) > 0,
+      length(try(var.saml_identity_provider.login_url, "")) > 0,
+      length(try(var.saml_identity_provider.encoded_metadata_document, "")) > 0,
+    ])
+    error_message = "When saml_identity_provider is set, entity_id, login_url and encoded_metadata_document must all be non-empty."
+  }
 
   validation {
     condition     = var.saml_identity_provider == null || contains(["Post", "Redirect"], try(var.saml_identity_provider.binding_type, "Post"))
@@ -146,7 +175,7 @@ variable "saml_service_provider" {
 }
 
 variable "access_configurations" {
-  description = "Access configurations (permission sets) to create in the directory."
+  description = "Access configurations (permission sets) to create in the directory. Set in prod.tfvars."
   type = list(object({
     name                    = string
     description             = optional(string)
@@ -158,37 +187,12 @@ variable "access_configurations" {
       policy_document = string
     }))
   }))
+  default = []
 
-  default = [
-    {
-      name                    = "Administrator"
-      description             = "Full administrative access to the assigned account."
-      managed_system_policies = ["AdministratorAccess"]
-      session_duration        = 3600
-    },
-    {
-      name                    = "ReadOnly"
-      description             = "Read-only access for auditors and on-call responders."
-      managed_system_policies = ["ReadOnlyAccess"]
-      session_duration        = 14400
-    },
-    {
-      name                    = "NetworkOps"
-      description             = "Manage VPC and CEN resources in the network account."
-      managed_system_policies = ["AliyunVPCFullAccess", "AliyunCENFullAccess"]
-      session_duration        = 7200
-    },
-    {
-      name                    = "SecurityAudit"
-      description             = "Read-only plus audit-trail access for the security team."
-      managed_system_policies = ["ReadOnlyAccess", "AliyunActionTrailReadOnlyAccess"]
-      session_duration        = 14400
-      inline_custom_policy = {
-        policy_name     = "SlsAuditRead"
-        policy_document = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"log:Get*\",\"log:List*\"],\"Resource\":[\"acs:log:*:*:project/*\"]}]}"
-      }
-    },
-  ]
+  validation {
+    condition     = length(var.access_configurations) > 0
+    error_message = "access_configurations must contain at least one access configuration; a directory without permission sets grants nobody access."
+  }
 
   validation {
     condition = alltrue([
@@ -199,46 +203,68 @@ variable "access_configurations" {
   }
 
   validation {
+    condition     = length(distinct([for config in var.access_configurations : config.name])) == length(var.access_configurations)
+    error_message = "Access configuration names must be unique."
+  }
+
+  validation {
     condition = alltrue([
       for config in var.access_configurations :
       config.session_duration >= 900 && config.session_duration <= 43200
     ])
     error_message = "Each access configuration session_duration must be between 900 and 43200 seconds."
   }
+
+  validation {
+    condition = alltrue([
+      for config in var.access_configurations :
+      length(config.managed_system_policies) > 0 || config.inline_custom_policy != null
+    ])
+    error_message = "Each access configuration must grant at least one managed system policy or an inline custom policy."
+  }
+
+  validation {
+    condition = alltrue([
+      for config in var.access_configurations :
+      config.inline_custom_policy == null || can(jsondecode(config.inline_custom_policy.policy_document))
+    ])
+    error_message = "Each inline_custom_policy.policy_document must be a valid JSON policy document."
+  }
 }
 
 variable "groups" {
-  description = "Directory groups and their members. Member names must exist in var.users."
+  description = "Directory groups and their members. Member names must exist in var.users. Set in prod.tfvars."
   type = list(object({
     group_name  = string
     description = optional(string)
     user_names  = optional(list(string), [])
   }))
+  default = []
 
-  default = [
-    {
-      group_name  = "lz-admins"
-      description = "Landing zone administrators."
-      user_names  = ["lz-admin"]
-    },
-    {
-      group_name  = "lz-readonly"
-      description = "Landing zone read-only users."
-      user_names  = ["lz-auditor"]
-    },
-    {
-      group_name  = "lz-network-ops"
-      description = "Network operations team."
-    },
-    {
-      group_name  = "lz-security-audit"
-      description = "Security audit team."
-    },
-  ]
+  validation {
+    condition = alltrue([
+      for group in var.groups :
+      length(group.group_name) > 0 && length(group.group_name) <= 128 && can(regex("^[A-Za-z0-9._-]+$", group.group_name))
+    ])
+    error_message = "Each group_name must be 1-128 characters of letters, digits, dots, underscores or hyphens."
+  }
+
+  validation {
+    condition     = length(distinct([for group in var.groups : group.group_name])) == length(var.groups)
+    error_message = "Group names must be unique."
+  }
+
+  validation {
+    condition = alltrue([
+      for group in var.groups :
+      length(distinct(group.user_names)) == length(group.user_names)
+    ])
+    error_message = "A group must not list the same user more than once."
+  }
 }
 
 variable "users" {
-  description = "Directory-local users. Passwords are intentionally omitted; users complete enrolment through the Cloud SSO portal."
+  description = "Directory-local users. Passwords are intentionally omitted; users complete enrolment through the Cloud SSO portal. Set in prod.tfvars."
   type = list(object({
     user_name                   = string
     display_name                = optional(string)
@@ -250,25 +276,40 @@ variable "users" {
     status                      = optional(string, "Enabled")
     tags                        = optional(map(string), {})
   }))
+  default = []
 
-  default = [
-    {
-      user_name    = "lz-admin"
-      display_name = "Landing Zone Admin"
-      email        = "lz-admin@example.com"
-      description  = "Demo administrator account."
-    },
-    {
-      user_name    = "lz-auditor"
-      display_name = "Landing Zone Auditor"
-      email        = "lz-auditor@example.com"
-      description  = "Demo read-only account."
-    },
-  ]
+  validation {
+    condition = alltrue([
+      for user in var.users :
+      length(user.user_name) > 0 && length(user.user_name) <= 64 && can(regex("^[A-Za-z0-9._@-]+$", user.user_name))
+    ])
+    error_message = "Each user_name must be 1-64 characters of letters, digits, dots, underscores, at signs or hyphens."
+  }
+
+  validation {
+    condition     = length(distinct([for user in var.users : user.user_name])) == length(var.users)
+    error_message = "User names must be unique."
+  }
+
+  validation {
+    condition = alltrue([
+      for user in var.users :
+      user.email == null || can(regex("^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$", user.email))
+    ])
+    error_message = "Each user email, when set, must be a valid address."
+  }
+
+  validation {
+    condition = alltrue([
+      for user in var.users :
+      contains(["Enabled", "Disabled"], user.mfa_authentication_settings) && contains(["Enabled", "Disabled"], user.status)
+    ])
+    error_message = "Each user mfa_authentication_settings and status must be either Enabled or Disabled."
+  }
 }
 
 variable "access_assignments" {
-  description = "Assignments of access configurations to principals on target accounts. account_names are Resource Directory account display names."
+  description = "Assignments of access configurations to principals on target accounts. account_names are Resource Directory account display names. Set in prod.tfvars."
   type = list(object({
     principal_name             = string
     principal_type             = optional(string, "Group")
@@ -276,30 +317,7 @@ variable "access_assignments" {
     include_management_account = optional(bool, false)
     access_configuration_names = list(string)
   }))
-
-  default = [
-    {
-      principal_name             = "lz-admins"
-      account_names              = ["devops", "log-archive", "security", "network", "shared-services", "iam"]
-      include_management_account = true
-      access_configuration_names = ["Administrator"]
-    },
-    {
-      principal_name             = "lz-readonly"
-      account_names              = ["devops", "log-archive", "security", "network", "shared-services", "iam"]
-      access_configuration_names = ["ReadOnly"]
-    },
-    {
-      principal_name             = "lz-network-ops"
-      account_names              = ["network"]
-      access_configuration_names = ["NetworkOps"]
-    },
-    {
-      principal_name             = "lz-security-audit"
-      account_names              = ["security", "log-archive"]
-      access_configuration_names = ["SecurityAudit"]
-    },
-  ]
+  default = []
 
   validation {
     condition = alltrue([
@@ -312,8 +330,24 @@ variable "access_assignments" {
   validation {
     condition = alltrue([
       for assignment in var.access_assignments :
+      length(assignment.principal_name) > 0
+    ])
+    error_message = "Each assignment must name a principal."
+  }
+
+  validation {
+    condition = alltrue([
+      for assignment in var.access_assignments :
       length(assignment.access_configuration_names) > 0
     ])
     error_message = "Each assignment must reference at least one access configuration."
+  }
+
+  validation {
+    condition = alltrue([
+      for assignment in var.access_assignments :
+      length(assignment.account_names) > 0 || assignment.include_management_account
+    ])
+    error_message = "Each assignment must target at least one account, either through account_names or include_management_account."
   }
 }

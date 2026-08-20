@@ -77,7 +77,11 @@ jobs:
           TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeDeployRole"
           TF_VAR_iam_role_arn: ${{ env.IAM_ACCOUNT_ID != '' && format('acs:ram::{0}:role/SpokeDeployRole', env.IAM_ACCOUNT_ID) || '' }}
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ -f prod.tfvars ]; then
+            terraform plan -input=false -no-color -out=tfplan -var-file=prod.tfvars
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload Plan
@@ -143,4 +147,9 @@ jobs:
         env:
           TF_VAR_spoke_role_arn: "acs:ram::${{ env.ACCOUNT_ID }}:role/SpokeDeployRole"
           TF_VAR_iam_role_arn: ${{ env.IAM_ACCOUNT_ID != '' && format('acs:ram::{0}:role/SpokeDeployRole', env.IAM_ACCOUNT_ID) || '' }}
-        run: terraform apply -input=false -auto-approve
+        run: |
+          if [ -f prod.tfvars ]; then
+            terraform apply -input=false -auto-approve -var-file=prod.tfvars
+          else
+            terraform apply -input=false -auto-approve
+          fi
