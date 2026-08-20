@@ -74,11 +74,11 @@ resource "alicloud_ots_table" "tflock" {
 
 resource "alicloud_ims_oidc_provider" "github" {
   oidc_provider_name  = "GitHubActions"
-  issuer_url         = "https://token.actions.githubusercontent.com"
-  client_ids         = ["sts.aliyuncs.com"]
-  fingerprints       = ["22FF89586561FC2D52F77491E9F1EFF1B80BE33E"]
+  issuer_url          = "https://token.actions.githubusercontent.com"
+  client_ids          = ["sts.aliyuncs.com"]
+  fingerprints        = ["22FF89586561FC2D52F77491E9F1EFF1B80BE33E"]
   issuance_limit_time = 12
-  description        = "OIDC provider for GitHub Actions CI/CD"
+  description         = "OIDC provider for GitHub Actions CI/CD"
 }
 
 # =============================================================================
@@ -146,6 +146,13 @@ resource "alicloud_ram_policy" "hub_chain_plan" {
         Resource = ["acs:ram::*:role/SpokeDeployRole"]
       },
       {
+        # The alicloud_oss_service and alicloud_ots_service data sources activate
+        # these services on every run; activation is not resource-scoped.
+        Effect   = "Allow"
+        Action   = ["oss:OpenOssService", "ots:OpenOtsService"]
+        Resource = "*"
+      },
+      {
         Effect   = "Allow"
         Action   = ["oss:GetObject", "oss:ListObjects", "oss:GetBucketInfo"]
         Resource = ["acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}", "acs:oss:*:*:${alicloud_oss_bucket.tfstate.bucket}/*"]
@@ -168,6 +175,13 @@ resource "alicloud_ram_policy" "hub_chain_apply" {
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
         Resource = ["acs:ram::*:role/SpokeDeployRole"]
+      },
+      {
+        # The alicloud_oss_service and alicloud_ots_service data sources activate
+        # these services on every run; activation is not resource-scoped.
+        Effect   = "Allow"
+        Action   = ["oss:OpenOssService", "ots:OpenOtsService"]
+        Resource = "*"
       },
       {
         Effect   = "Allow"
