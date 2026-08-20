@@ -109,7 +109,14 @@ resource "alicloud_ros_stack_instances" "spoke_roles" {
 
   # A SERVICE_MANAGED stack group only accepts deployment targets, never bare
   # account IDs, so this cannot use the singular alicloud_ros_stack_instance.
+  # Targeting the root folder covers every member account in the Resource
+  # Directory, so accounts added later pick up the role via auto_deployment
+  # instead of needing this list refreshed.
   deployment_targets {
-    account_ids = values(module.accounts.role_to_account_mapping)
+    rd_folder_ids = [module.folders.root_folder_id]
   }
+
+  # The folder target no longer references the accounts, so the ordering the
+  # old account_ids list provided has to be stated.
+  depends_on = [module.accounts]
 }
