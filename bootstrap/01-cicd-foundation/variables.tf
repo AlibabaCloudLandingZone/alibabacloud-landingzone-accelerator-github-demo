@@ -4,6 +4,12 @@ variable "region" {
   default     = "cn-hangzhou"
 }
 
+variable "spoke_role_arn" {
+  description = "ARN of the CICD account SpokeDeployRole to assume (injected via TF_VAR_spoke_role_arn in CI). Leave empty when running locally with CICD account credentials."
+  type        = string
+  default     = ""
+}
+
 variable "cicd_account_id" {
   description = "Account ID of the CICD/DevOps member account (from phase 1 output)"
   type        = string

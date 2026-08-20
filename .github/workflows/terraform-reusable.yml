@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: ""
+      var_file:
+        description: "Variable definitions file, relative to working_directory, for stages whose required variables are not defaulted (optional)"
+        required: false
+        type: string
+        default: ""
       terraform_action:
         description: "Action to perform: plan or apply"
         required: true
@@ -97,8 +102,13 @@ jobs:
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
           TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
+          VAR_FILE: ${{ inputs.var_file }}
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ -n "$VAR_FILE" ]; then
+            terraform plan -input=false -no-color -out=tfplan -var-file="$VAR_FILE"
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Derive artifact name
@@ -151,4 +161,10 @@ jobs:
         env:
           TF_VAR_spoke_role_arn: ${{ inputs.spoke_role_arn }}
           TF_VAR_management_role_arn: ${{ inputs.management_role_arn }}
-        run: terraform apply -input=false -auto-approve
+          VAR_FILE: ${{ inputs.var_file }}
+        run: |
+          if [ -n "$VAR_FILE" ]; then
+            terraform apply -input=false -auto-approve -var-file="$VAR_FILE"
+          else
+            terraform apply -input=false -auto-approve
+          fi
