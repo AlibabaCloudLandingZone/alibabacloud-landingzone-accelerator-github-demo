@@ -137,6 +137,26 @@ groups = [
     group_name  = "lz-security-audit"
     description = "Security audit team."
   },
+  {
+    group_name  = "lz-power-users"
+    description = "Workload builders. Members arrive via SCIM."
+  },
+  {
+    group_name  = "lz-database-admins"
+    description = "Database operations team. Members arrive via SCIM."
+  },
+  {
+    group_name  = "lz-billing-admins"
+    description = "Finance team managing orders and invoices. Members arrive via SCIM."
+  },
+  {
+    group_name  = "lz-billing-readonly"
+    description = "Cost and usage reporting viewers. Members arrive via SCIM."
+  },
+  {
+    group_name  = "lz-support-operators"
+    description = "Team raising and tracking support tickets. Members arrive via SCIM."
+  },
 ]
 
 access_assignments = [
@@ -160,5 +180,33 @@ access_assignments = [
     principal_name             = "lz-security-audit"
     account_names              = ["security", "log-archive"]
     access_configuration_names = ["SecurityAudit"]
+  },
+  {
+    principal_name             = "lz-power-users"
+    account_names              = ["devops", "shared-services"]
+    access_configuration_names = ["PowerUser"]
+  },
+  {
+    principal_name             = "lz-database-admins"
+    account_names              = ["shared-services"]
+    access_configuration_names = ["DatabaseAdmin"]
+  },
+  # Billing is settled on the Resource Directory management account, so the finance roles are scoped
+  # there only.
+  {
+    principal_name             = "lz-billing-admins"
+    include_management_account = true
+    access_configuration_names = ["BillingAdmin"]
+  },
+  {
+    principal_name             = "lz-billing-readonly"
+    include_management_account = true
+    access_configuration_names = ["BillingReadOnly"]
+  },
+  {
+    principal_name             = "lz-support-operators"
+    account_names              = ["devops", "network", "shared-services"]
+    include_management_account = true
+    access_configuration_names = ["SupportOperator"]
   },
 ]
