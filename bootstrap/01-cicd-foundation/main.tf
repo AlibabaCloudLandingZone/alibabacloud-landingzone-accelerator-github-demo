@@ -114,7 +114,15 @@ resource "alicloud_ram_role" "github_plan" {
           "oidc:iss" = "https://token.actions.githubusercontent.com"
         }
         StringLike = {
-          "oidc:sub" = "repo:${var.github_org_repo}:pull_request"
+          # Two entry points hold this role: the pull_request plan, and the on-demand
+          # workflow_dispatch plan in stacks.yml, which presents the branch ref instead.
+          # The dispatch subject is pinned to main rather than any ref because this role
+          # can assume SpokeDeployRole, so a run must carry the workflow definition that
+          # was reviewed on main.
+          "oidc:sub" = [
+            "repo:${var.github_org_repo}:pull_request",
+            "repo:${var.github_org_repo}:ref:refs/heads/main",
+          ]
         }
       }
     }]
